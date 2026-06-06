@@ -34,7 +34,7 @@ project_root = os.path.dirname(
 )
 sys.path.append(project_root)
 from src.data.load_data import LoadData
-from src.data.clean_data import CleanData
+from src.data.clean_data import CleanDataBERT
 from src.models.train_model import ModelTrainer
 from src.models.evaluate_model import ModelEvaluator
 from src.utils.logger import logger
@@ -84,7 +84,12 @@ class TrainingPipeline:
                     df = LoadData().load_data()
 
                 elif stage == "clean_data":
-                    df = CleanData().clean_data()
+                    cleaner = CleanDataBERT()
+                    # The prepare_datasets method handles cleaning, labeling, and splitting
+                    self.train_dataset, self.val_dataset, self.test_dataset, self.test_labels = cleaner.prepare_datasets(self.df)
+                    cleaner.tokenizer.save_pretrained(self.output_dir)
+                    logger.info(f"Datasets ready — Train: {len(self.train_dataset)}, "
+                            f"Val: {len(self.val_dataset)}, Test: {len(self.test_dataset)}")
 
                 elif stage == "train_model":
                     if df is None:

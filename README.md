@@ -755,6 +755,3 @@ Before pushing a PR, it's highly recommended to run the CI checks locally to avo
 ```bash
 make ci-pr-simulation
 ```
-#   R e v i e w S e n t i n e l  
- #   R e v i e w S e n t i n e l  
- 

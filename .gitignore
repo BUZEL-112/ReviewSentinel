@@ -288,3 +288,6 @@ secrets.*.yaml
 # SSH known_hosts backups (created by ssh-keygen -R)
 known_hosts.old
 /root/.ssh/known_hosts.old
+
+
+colabtest.ipynb
