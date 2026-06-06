@@ -1,0 +1,60 @@
+name: reviewsentinel-training
+prefect-version: 2.0.0
+
+# build section allows you to manage and build docker images
+build: null
+
+# push section allows you to manage if and how this project is uploaded to remote locations
+push: null
+
+# pull section allows you to provide instructions for cloning this project in remote locations
+pull:
+- prefect.deployments.steps.set_working_directory:
+    directory: /opt/prefect/project
+
+# the deployments section allows you to provide configuration for deploying flows
+deployments:
+- name: weekly-training-pipeline
+  version: null
+  tags: []
+  description: Weekly retraining pipeline for ReviewSentinel
+  entrypoint: src/orchestration/flows.py:training_flow
+  parameters: {}
+  work_pool:
+    name: default-agent-pool
+    work_queue_name: null
+    job_variables: {}
+  schedules:
+    - cron: "0 2 * * 1"
+      timezone: "UTC"
+      active: true
+
+- name: weekly-drift-monitoring
+  version: null
+  tags: ["monitoring"]
+  description: Weekly drift monitoring pipeline for ReviewSentinel
+  entrypoint: src/orchestration/flows.py:monitoring_flow
+  parameters: {}
+  work_pool:
+    name: default-agent-pool
+    work_queue_name: null
+    job_variables: {}
+  schedules:
+    - cron: "0 3 * * 1"
+      timezone: "UTC"
+      active: true
+
+- name: llm-judge-processing
+  version: null
+  tags: ["judge"]
+  description: Async LLM Judge processing queue for ReviewSentinel
+  entrypoint: src/orchestration/flows.py:judge_processing_flow
+  parameters: {}
+  work_pool:
+    name: default-agent-pool
+    work_queue_name: null
+    job_variables: {}
+  schedules:
+    - cron: "0 */4 * * *"
+      timezone: "UTC"
+      active: true

@@ -1,0 +1,41 @@
+controller:
+  # Use HostNetwork mode — the ingress controller binds directly to
+  # port 80 and 443 on the node, which is appropriate for a single-node
+  # cluster without a cloud load balancer
+  hostNetwork: true
+  hostPort:
+    enabled: true
+    ports:
+      http: 80
+      https: 443
+  
+  kind: DaemonSet    # DaemonSet ensures exactly one pod per node, correct for HostNetwork
+  
+  # Resource limits appropriate for cx22 (2 vCPU, 4GB RAM)
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+  
+  # Configure for single-node: don't require multiple replicas
+  replicaCount: 1
+  
+  config:
+    # Pass real client IPs through the proxy
+    use-forwarded-headers: "true"
+    compute-full-forwarded-for: "true"
+    
+    # Timeouts appropriate for ML inference (longer than typical web apps)
+    proxy-read-timeout: "120"
+    proxy-send-timeout: "120"
+    proxy-connect-timeout: "10"
+    
+    # GZIP compression for API responses
+    use-gzip: "true"
+    gzip-min-length: "1000"
+  
+  service:
+    type: ClusterIP    # No LoadBalancer needed — HostNetwork handles external access

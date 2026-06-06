@@ -1,0 +1,47 @@
+# ==============================================================================
+# ReviewSentinel — Model Parameters
+# ==============================================================================
+# This file is consumed by ModelBuilder (build_model.py) and ModelTrainer
+# (train_model.py) when a standalone model config is passed via
+# pipeline_params.yaml -> training.model_params_path.
+#
+# It contains ONLY the parameters that the current transformer-based codebase
+# actually reads. The legacy LSTM / CNN / CNN-LSTM / LogisticRegression
+# architectures have been removed from the source code and are no longer valid.
+# ==============================================================================
+
+# --------------------------------------------------
+# DistilBERT — Primary Sentiment Model
+# --------------------------------------------------
+distilbert_model:
+  model_name: "prajjwal1/bert-tiny"
+  num_labels: 3                    # negative / neutral / positive
+  training:
+    output_dir: "artifacts/models/distilbert"
+    epochs: 3
+    train_batch_size: 14
+    eval_batch_size: 4
+    warmup_steps: 100
+    weight_decay: 0.01
+    learning_rate: 2.0e-5
+    logging_dir: "logs/training"
+    logging_steps: 10
+    save_steps: 500
+    fp16: false
+
+# --------------------------------------------------
+# Aspect Model (SetFit) — Few-Shot Aspect Classification
+# --------------------------------------------------
+aspect_model:
+  backbone: "sentence-transformers/paraphrase-mpnet-base-v2"
+  save_dir: "artifacts/models/aspect_model"
+  training:
+    num_epochs: 1
+    batch_size: 16
+
+# --------------------------------------------------
+# MLflow Experiment Tracking
+# --------------------------------------------------
+mlflow:
+  tracking_uri: "http://mlflow:5000"
+  experiment_name: "reviewsentinel-training"

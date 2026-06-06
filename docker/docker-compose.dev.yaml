@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  api:
+    command: ["--reload"]
+    environment:
+      LOG_LEVEL: DEBUG
+    volumes:
+      - ../src:/app/src
+
+  prefect-worker:
+    environment:
+      LOG_LEVEL: DEBUG
+
+  mlflow:
+    environment:
+      LOG_LEVEL: DEBUG

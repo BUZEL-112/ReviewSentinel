@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sentiment Analysis test interface | Cyberpunk Analysis</title>
+    <style>
+        :root {
+            --neon-blue: #0ff0fc;
+            --neon-pink: #ff00ff;
+            --neon-purple: #bc13fe;
+            --dark-bg: #0a0a12;
+            --darker-bg: #050508;
+            --grid-color: rgba(10, 200, 255, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Courier New', monospace;
+        }
+
+        body {
+            background-color: var(--dark-bg);
+            color: white;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Grid background */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image:
+                linear-gradient(var(--grid-color) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+            background-size: 50px 50px;
+            z-index: -1;
+            opacity: 0.3;
+        }
+
+        /* Scanline effect */
+        body::after {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom,
+                    transparent 50%,
+                    rgba(0, 0, 0, 0.1) 50%);
+            background-size: 100% 4px;
+            z-index: -1;
+            pointer-events: none;
+            animation: scanline 10s linear infinite;
+        }
+
+        @keyframes scanline {
+            0% {
+                background-position: 0 0;
+            }
+
+            100% {
+                background-position: 0 100%;
+            }
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            padding: 30px 0;
+            border-bottom: 1px solid var(--neon-blue);
+            margin-bottom: 40px;
+            position: relative;
+        }
+
+        header::after {
+            content: "";
+            position: absolute;
+            bottom: -2px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 200px;
+            height: 3px;
+            background: var(--neon-blue);
+            box-shadow: 0 0 10px var(--neon-blue);
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            margin-bottom: 10px;
+            text-shadow: 0 0 10px var(--neon-blue);
+            color: var(--neon-blue);
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: var(--neon-pink);
+            text-shadow: 0 0 5px var(--neon-pink);
+            letter-spacing: 2px;
+        }
+
+        .status-panel {
+            background-color: rgba(0, 0, 0, 0.7);
+            border: 1px solid var(--neon-blue);
+            padding: 15px;
+            margin-bottom: 30px;
+            border-radius: 5px;
+            box-shadow: 0 0 15px rgba(10, 240, 252, 0.3);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 10px;
+            animation: pulse 2s infinite;
+        }
+
+        .status-online {
+            background-color: #00ff00;
+            box-shadow: 0 0 10px #00ff00;
+        }
+
+        .status-offline {
+            background-color: #ff0000;
+            box-shadow: 0 0 10px #ff0000;
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+
+            100% {
+                opacity: 1;
+            }
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .panel {
+            background-color: rgba(0, 0, 0, 0.7);
+            border: 1px solid var(--neon-purple);
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 15px rgba(188, 19, 254, 0.3);
+        }
+
+        .panel-title {
+            color: var(--neon-purple);
+            text-shadow: 0 0 5px var(--neon-purple);
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            border-bottom: 1px solid var(--neon-purple);
+            padding-bottom: 10px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--neon-blue);
+            text-transform: uppercase;
+            font-size: 0.9rem;
+            letter-spacing: 1px;
+        }
+
+        input,
+        textarea {
+            width: 100%;
+            padding: 12px;
+            background-color: rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--neon-blue);
+            color: white;
+            border-radius: 3px;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+
+        input:focus,
+        textarea:focus {
+            outline: none;
+            box-shadow: 0 0 10px var(--neon-blue);
+        }
+
+        textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .btn {
+            background: transparent;
+            color: var(--neon-pink);
+            border: 1px solid var(--neon-pink);
+            padding: 12px 24px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .btn:hover {
+            background-color: rgba(255, 0, 255, 0.1);
+            box-shadow: 0 0 15px var(--neon-pink);
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg,
+                    transparent,
+                    rgba(255, 255, 255, 0.2),
+                    transparent);
+            transition: left 0.5s;
+        }
+
+        .btn:hover::after {
+            left: 100%;
+        }
+
+        .result {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: rgba(0, 0, 0, 0.7);
+            border-radius: 5px;
+            border: 1px solid var(--neon-blue);
+            display: none;
+        }
+
+        .result-title {
+            color: var(--neon-blue);
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .sentiment-display {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .sentiment-label {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-right: 15px;
+            text-transform: uppercase;
+        }
+
+        .sentiment-positive {
+            color: #00ff00;
+            text-shadow: 0 0 10px #00ff00;
+        }
+
+        .sentiment-negative {
+            color: #ff0000;
+            text-shadow: 0 0 10px #ff0000;
+        }
+
+        .sentiment-neutral {
+            color: #ffff00;
+            text-shadow: 0 0 10px #ffff00;
+        }
+
+        .confidence-bar {
+            height: 20px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--neon-pink), var(--neon-blue));
+            border-radius: 10px;
+            width: 0%;
+            transition: width 1s ease-in-out;
+        }
+
+        .confidence-text {
+            margin-top: 5px;
+            font-size: 0.9rem;
+            color: #ccc;
+        }
+
+        .batch-input {
+            margin-bottom: 20px;
+        }
+
+        .batch-result {
+            margin-top: 30px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .result-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .result-table th {
+            background-color: rgba(10, 240, 252, 0.2);
+            color: var(--neon-blue);
+            padding: 12px;
+            text-align: left;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 0.9rem;
+        }
+
+        .result-table td {
+            padding: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .result-table tr:hover {
+            background-color: rgba(10, 240, 252, 0.05);
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .loading-dots {
+            display: inline-block;
+            position: relative;
+            width: 80px;
+            height: 20px;
+        }
+
+        .loading-dots div {
+            position: absolute;
+            top: 0;
+            width: 13px;
+            height: 13px;
+            border-radius: 50%;
+            background: var(--neon-blue);
+            animation-timing-function: cubic-bezier(0, 1, 1, 0);
+        }
+
+        .loading-dots div:nth-child(1) {
+            left: 8px;
+            animation: loading-dots1 0.6s infinite;
+        }
+
+        .loading-dots div:nth-child(2) {
+            left: 8px;
+            animation: loading-dots2 0.6s infinite;
+        }
+
+        .loading-dots div:nth-child(3) {
+            left: 32px;
+            animation: loading-dots2 0.6s infinite;
+        }
+
+        .loading-dots div:nth-child(4) {
+            left: 56px;
+            animation: loading-dots3 0.6s infinite;
+        }
+
+        @keyframes loading-dots1 {
+            0% {
+                transform: scale(0);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        @keyframes loading-dots3 {
+            0% {
+                transform: scale(1);
+            }
+
+            100% {
+                transform: scale(0);
+            }
+        }
+
+        @keyframes loading-dots2 {
+            0% {
+                transform: translate(0, 0);
+            }
+
+            100% {
+                transform: translate(24px, 0);
+            }
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            margin-top: 40px;
+            border-top: 1px solid var(--neon-purple);
+            color: #aaa;
+            font-size: 0.9rem;
+        }
+
+        .glitch {
+            position: relative;
+            display: inline-block;
+        }
+
+        .glitch::before,
+        .glitch::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .glitch::before {
+            left: 2px;
+            text-shadow: -2px 0 #ff00ff;
+            clip: rect(44px, 450px, 56px, 0);
+            animation: glitch-anim 5s infinite linear alternate-reverse;
+        }
+
+        .glitch::after {
+            left: -2px;
+            text-shadow: -2px 0 #00ffff;
+            clip: rect(44px, 450px, 56px, 0);
+            animation: glitch-anim2 5s infinite linear alternate-reverse;
+        }
+
+        @keyframes glitch-anim {
+            0% {
+                clip: rect(42px, 9999px, 44px, 0);
+            }
+
+            5% {
+                clip: rect(12px, 9999px, 59px, 0);
+            }
+
+            10% {
+                clip: rect(48px, 9999px, 29px, 0);
+            }
+
+            15% {
+                clip: rect(42px, 9999px, 73px, 0);
+            }
+
+            20% {
+                clip: rect(63px, 9999px, 27px, 0);
+            }
+
+            25% {
+                clip: rect(34px, 9999px, 55px, 0);
+            }
+
+            30% {
+                clip: rect(86px, 9999px, 73px, 0);
+            }
+
+            35% {
+                clip: rect(20px, 9999px, 20px, 0);
+            }
+
+            40% {
+                clip: rect(26px, 9999px, 60px, 0);
+            }
+
+            45% {
+                clip: rect(25px, 9999px, 66px, 0);
+            }
+
+            50% {
+                clip: rect(57px, 9999px, 98px, 0);
+            }
+
+            55% {
+                clip: rect(5px, 9999px, 46px, 0);
+            }
+
+            60% {
+                clip: rect(82px, 9999px, 31px, 0);
+            }
+
+            65% {
+                clip: rect(54px, 9999px, 27px, 0);
+            }
+
+            70% {
+                clip: rect(28px, 9999px, 99px, 0);
+            }
+
+            75% {
+                clip: rect(45px, 9999px, 69px, 0);
+            }
+
+            80% {
+                clip: rect(23px, 9999px, 85px, 0);
+            }
+
+            85% {
+                clip: rect(54px, 9999px, 84px, 0);
+            }
+
+            90% {
+                clip: rect(45px, 9999px, 47px, 0);
+            }
+
+            95% {
+                clip: rect(37px, 9999px, 20px, 0);
+            }
+
+            100% {
+                clip: rect(4px, 9999px, 91px, 0);
+            }
+        }
+
+        @keyframes glitch-anim2 {
+            0% {
+                clip: rect(65px, 9999px, 100px, 0);
+            }
+
+            5% {
+                clip: rect(52px, 9999px, 74px, 0);
+            }
+
+            10% {
+                clip: rect(79px, 9999px, 85px, 0);
+            }
+
+            15% {
+                clip: rect(75px, 9999px, 5px, 0);
+            }
+
+            20% {
+                clip: rect(67px, 9999px, 61px, 0);
+            }
+
+            25% {
+                clip: rect(14px, 9999px, 79px, 0);
+            }
+
+            30% {
+                clip: rect(1px, 9999px, 66px, 0);
+            }
+
+            35% {
+                clip: rect(86px, 9999px, 30px, 0);
+            }
+
+            40% {
+                clip: rect(23px, 9999px, 98px, 0);
+            }
+
+            45% {
+                clip: rect(85px, 9999px, 72px, 0);
+            }
+
+            50% {
+                clip: rect(71px, 9999px, 75px, 0);
+            }
+
+            55% {
+                clip: rect(2px, 9999px, 48px, 0);
+            }
+
+            60% {
+                clip: rect(30px, 9999px, 16px, 0);
+            }
+
+            65% {
+                clip: rect(59px, 9999px, 50px, 0);
+            }
+
+            70% {
+                clip: rect(41px, 9999px, 62px, 0);
+            }
+
+            75% {
+                clip: rect(2px, 9999px, 82px, 0);
+            }
+
+            80% {
+                clip: rect(47px, 9999px, 73px, 0);
+            }
+
+            85% {
+                clip: rect(3px, 9999px, 27px, 0);
+            }
+
+            90% {
+                clip: rect(26px, 9999px, 55px, 0);
+            }
+
+            95% {
+                clip: rect(42px, 9999px, 97px, 0);
+            }
+
+            100% {
+                clip: rect(38px, 9999px, 49px, 0);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1 class="glitch" data-text="Sentiment Analysis test interface">Sentiment Analysis test interface</h1>
+            <p class="subtitle">CYBERPUNK SENTIMENT ANALYSIS INTERFACE</p>
+        </header>
+
+        <div class="status-panel">
+            <div class="status-indicator">
+                <div class="status-dot status-online"></div>
+                <span>SYSTEM STATUS: <span id="system-status">CHECKING...</span></span>
+            </div>
+            <div id="model-info">MODEL: LOADING...</div>
+        </div>
+
+        <div class="dashboard">
+            <div class="panel">
+                <h2 class="panel-title">Single Analysis</h2>
+                <div class="input-group">
+                    <label for="title-input">Title</label>
+                    <input type="text" id="title-input" placeholder="Enter product title or review title...">
+                </div>
+                <div class="input-group">
+                    <label for="text-input">Text (Optional)</label>
+                    <textarea id="text-input" placeholder="Enter review text (optional)..."></textarea>
+                </div>
+                <button class="btn" id="analyze-btn">Analyze Sentiment</button>
+
+                <div class="loading" id="single-loading">
+                    <div class="loading-dots">
+                        <div></div>
+                        <div></div>
+                        <div></div>
+                        <div></div>
+                    </div>
+                    <p>Processing sentiment analysis...</p>
+                </div>
+
+                <div class="result" id="single-result">
+                    <h3 class="result-title">Analysis Result</h3>
+                    <div class="sentiment-display">
+                        <div class="sentiment-label" id="sentiment-label">NEUTRAL</div>
+                        <div class="sentiment-value" id="sentiment-value"></div>
+                    </div>
+                    <div class="confidence-bar">
+                        <div class="confidence-fill" id="confidence-fill"></div>
+                    </div>
+                    <div class="confidence-text">Confidence: <span id="confidence-value">0%</span></div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h2 class="panel-title">Batch Analysis</h2>
+                <div class="input-group batch-input">
+                    <label for="batch-input">Batch Data (JSON Format)</label>
+                    <textarea id="batch-input"
+                        placeholder='[{"title": "Product 1", "text": "Review text 1"}, {"title": "Product 2", "text": "Review text 2"}]'></textarea>
+                </div>
+                <button class="btn" id="batch-analyze-btn">Analyze Batch</button>
+
+                <div class="loading" id="batch-loading">
+                    <div class="loading-dots">
+                        <div></div>
+                        <div></div>
+                        <div></div>
+                        <div></div>
+                    </div>
+                    <p>Processing batch analysis...</p>
+                </div>
+
+                <div class="batch-result" id="batch-result">
+                    <h3 class="result-title">Batch Results</h3>
+                    <div id="batch-results-container">
+                        <table class="result-table">
+                            <thead>
+                                <tr>
+                                    <th>Title</th>
+                                    <th>Text</th>
+                                    <th>Sentiment</th>
+                                </tr>
+                            </thead>
+                            <tbody id="batch-results-body">
+                                <!-- Results will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <p>Sentiment Analysis test interface v1.0 | CYBERPUNK INTERFACE | API STATUS: <span
+                    id="api-status">CHECKING</span></p>
+        </footer>
+    </div>
+
+    <script>
+        // API configuration
+        const API_BASE_URL = 'http://127.0.0.1:8000';
+        
+        // DOM elements
+        const systemStatus = document.getElementById('system-status');
+        const modelInfo = document.getElementById('model-info');
+        const apiStatus = document.getElementById('api-status');
+        const analyzeBtn = document.getElementById('analyze-btn');
+        const batchAnalyzeBtn = document.getElementById('batch-analyze-btn');
+        const singleResult = document.getElementById('single-result');
+        const batchResult = document.getElementById('batch-result');
+        const singleLoading = document.getElementById('single-loading');
+        const batchLoading = document.getElementById('batch-loading');
+        const sentimentLabel = document.getElementById('sentiment-label');
+        const sentimentValue = document.getElementById('sentiment-value');
+        const confidenceFill = document.getElementById('confidence-fill');
+        const confidenceValue = document.getElementById('confidence-value');
+        const batchResultsBody = document.getElementById('batch-results-body');
+
+        // Check API health on page load
+        document.addEventListener('DOMContentLoaded', function () {
+            checkAPIHealth();
+        });
+
+        // Check API health
+        async function checkAPIHealth() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/health`);
+                const data = await response.json();
+
+                if (data.status === 'healthy' && data.model_loaded) {
+                    systemStatus.textContent = 'OPERATIONAL';
+                    systemStatus.style.color = '#00ff00';
+                    apiStatus.textContent = 'ONLINE';
+                    apiStatus.style.color = '#00ff00';
+                    modelInfo.textContent = `MODEL: ${data.model_type || 'LOADED'}`;
+                } else {
+                    systemStatus.textContent = 'DEGRADED';
+                    systemStatus.style.color = '#ffff00';
+                    apiStatus.textContent = 'PARTIAL';
+                    apiStatus.style.color = '#ffff00';
+                    modelInfo.textContent = 'MODEL: UNAVAILABLE';
+                }
+            } catch (error) {
+                console.error('API health check failed:', error);
+                systemStatus.textContent = 'OFFLINE';
+                systemStatus.style.color = '#ff0000';
+                apiStatus.textContent = 'OFFLINE';
+                apiStatus.style.color = '#ff0000';
+                modelInfo.textContent = 'MODEL: UNAVAILABLE';
+            }
+        }
+
+        // Single analysis
+        analyzeBtn.addEventListener('click', async function () {
+            const title = document.getElementById('title-input').value.trim();
+            const text = document.getElementById('text-input').value.trim();
+
+            if (!title) {
+                alert('Please enter a title');
+                return;
+            }
+
+            singleLoading.style.display = 'block';
+            singleResult.style.display = 'none';
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/predict`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        title: title,
+                        text: text || null
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API error: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                // Display results
+                displaySingleResult(data);
+
+            } catch (error) {
+                console.error('Analysis failed:', error);
+                alert('Analysis failed. Please check the API connection.');
+            } finally {
+                singleLoading.style.display = 'none';
+            }
+        });
+
+        // Batch analysis
+        batchAnalyzeBtn.addEventListener('click', async function () {
+            const batchInput = document.getElementById('batch-input').value.trim();
+
+            if (!batchInput) {
+                alert('Please enter batch data in JSON format');
+                return;
+            }
+
+            let items;
+            try {
+                items = JSON.parse(batchInput);
+                if (!Array.isArray(items)) {
+                    throw new Error('Input must be an array of objects');
+                }
+            } catch (error) {
+                alert('Invalid JSON format. Please check your input.');
+                return;
+            }
+
+            batchLoading.style.display = 'block';
+            batchResult.style.display = 'none';
+
+            try {
+                // For batch processing, we'll make individual requests
+                // In a real implementation, you might want to add a batch endpoint to your API
+                const results = [];
+
+                for (const item of items) {
+                    if (!item.title) {
+                        results.push({
+                            ...item,
+                            prediction: 'ERROR',
+                            error: 'Missing title'
+                        });
+                        continue;
+                    }
+
+                    try {
+                        const response = await fetch(`${API_BASE_URL}/predict`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                title: item.title,
+                                text: item.text || null
+                            })
+                        });
+
+                        if (response.ok) {
+                            const data = await response.json();
+                            results.push(data);
+                        } else {
+                            results.push({
+                                ...item,
+                                prediction: 'ERROR',
+                                error: `API error: ${response.status}`
+                            });
+                        }
+                    } catch (error) {
+                        results.push({
+                            ...item,
+                            prediction: 'ERROR',
+                            error: error.message
+                        });
+                    }
+                }
+
+                // Display batch results
+                displayBatchResults(results);
+
+            } catch (error) {
+                console.error('Batch analysis failed:', error);
+                alert('Batch analysis failed. Please check the API connection.');
+            } finally {
+                batchLoading.style.display = 'none';
+            }
+        });
+
+        // Display single result
+        function displaySingleResult(data) {
+            singleResult.style.display = 'block';
+
+            // Set sentiment
+            const sentiment = data.prediction;
+            sentimentValue.textContent = sentiment;
+
+            // Style based on sentiment
+            if (sentiment.toLowerCase().includes('positive')) {
+                sentimentLabel.textContent = 'POSITIVE';
+                sentimentLabel.className = 'sentiment-label sentiment-positive';
+            } else if (sentiment.toLowerCase().includes('negative')) {
+                sentimentLabel.textContent = 'NEGATIVE';
+                sentimentLabel.className = 'sentiment-label sentiment-negative';
+            } else {
+                sentimentLabel.textContent = 'NEUTRAL';
+                sentimentLabel.className = 'sentiment-label sentiment-neutral';
+            }
+
+            // Set confidence (using placeholder if not provided)
+            const confidence = data.confidence || 0.85;
+            const confidencePercent = Math.round(confidence * 100);
+            confidenceValue.textContent = `${confidencePercent}%`;
+            confidenceFill.style.width = `${confidencePercent}%`;
+        }
+
+        // Display batch results
+        function displayBatchResults(results) {
+            batchResult.style.display = 'block';
+            batchResultsBody.innerHTML = '';
+
+            results.forEach(result => {
+                const row = document.createElement('tr');
+
+                // Title cell
+                const titleCell = document.createElement('td');
+                titleCell.textContent = result.title || 'N/A';
+                row.appendChild(titleCell);
+
+                // Text cell
+                const textCell = document.createElement('td');
+                textCell.textContent = result.text || 'N/A';
+                row.appendChild(textCell);
+
+                // Sentiment cell
+                const sentimentCell = document.createElement('td');
+                sentimentCell.textContent = result.prediction || 'ERROR';
+
+                // Color code based on sentiment
+                if (result.prediction) {
+                    if (result.prediction.toLowerCase().includes('positive')) {
+                        sentimentCell.style.color = '#00ff00';
+                    } else if (result.prediction.toLowerCase().includes('negative')) {
+                        sentimentCell.style.color = '#ff0000';
+                    } else {
+                        sentimentCell.style.color = '#ffff00';
+                    }
+                } else {
+                    sentimentCell.style.color = '#ff0000';
+                }
+
+                row.appendChild(sentimentCell);
+                batchResultsBody.appendChild(row);
+            });
+        }
+    </script>
+</body>
+
+</html>

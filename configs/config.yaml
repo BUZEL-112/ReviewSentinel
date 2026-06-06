@@ -1,0 +1,90 @@
+# ==============================================================================
+# ReviewSentinel — Core Configuration
+# ==============================================================================
+# This file is the single source of truth for data ingestion, preprocessing,
+# model architecture, and training hyperparameters. It is consumed by:
+#   - src/data/load_data.py        (LoadData)
+#   - src/data/clean_data.py       (CleanDataBERT)
+#   - src/models/build_model.py    (ModelBuilder)
+#   - src/models/train_model.py    (ModelTrainer)
+# ==============================================================================
+
+# --------------------------------------------------
+# Project Metadata
+# --------------------------------------------------
+project:
+  name: "ReviewSentinel"
+  version: "1.0.0"
+  description: "a scalable machine learning pipeline for analysing sentiment of custumer review"
+
+# --------------------------------------------------
+# Directory Paths
+# --------------------------------------------------
+paths:
+  root_dir: "./"
+  raw_data_dir: "data/raw"
+  processed_data_dir: "data/processed"
+  models_dir: "artifacts/models"
+  logs_dir: "logs"
+
+# --------------------------------------------------
+# Data Ingestion — consumed by LoadData
+# --------------------------------------------------
+data_ingestion:
+  source_url: "https://mcauleylab.ucsd.edu/public_datasets/data/amazon_2023/raw/review_categories/All_Beauty.jsonl.gz"
+  save_dir: "data/raw/"
+  local_data_file: "data/raw/dataset.csv"
+
+# --------------------------------------------------
+# BERT Preprocessing — consumed by CleanDataBERT
+# --------------------------------------------------
+clean_data_bert:
+  model_name: "distilbert-base-uncased"
+  max_len: 128
+  test_size: 0.2
+  val_size: 0.1
+  random_state: 42
+  shuffle: true
+
+# --------------------------------------------------
+# DistilBERT Model — consumed by ModelBuilder & ModelTrainer
+# --------------------------------------------------
+distilbert_model:
+  model_name: "distilbert-base-uncased"
+  num_labels: 3                    # negative / neutral / positive
+  training:
+    output_dir: "artifacts/models/distilbert"
+    epochs: 1
+    train_batch_size: 8
+    eval_batch_size: 16
+    warmup_steps: 100
+    weight_decay: 0.01
+    learning_rate: 2.0e-5
+    logging_dir: "logs/training"
+    logging_steps: 10
+    save_steps: 500
+    fp16: false
+
+# --------------------------------------------------
+# MLflow Experiment Tracking
+# --------------------------------------------------
+mlflow:
+  tracking_uri: "http://mlflow:5000"   # was: "./mlruns"
+  experiment_name: "reviewsentinel-training"
+
+# --------------------------------------------------
+# Explainability — consumed by API SentimentExplainer
+# --------------------------------------------------
+explainability:
+  enabled: true
+  max_evals: 500
+  top_k_tokens: 10
+
+# --------------------------------------------------
+# Logging
+# --------------------------------------------------
+logging:
+  level: "INFO"
+  log_to_file: true
+  log_file_path: "logs/app.log"
+  rotate_logs: true

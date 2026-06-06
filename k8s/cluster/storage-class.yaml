@@ -1,0 +1,11 @@
+# Storage configuration for ReviewSentinel on k3s
+# 
+# k3s ships with the local-path StorageClass which is used by all PVCs in this cluster.
+# Storage is backed by /var/lib/rancher/k3s/storage/ on the node.
+#
+# Scaling note: local-path is ReadWriteOnce and node-local.
+# For multi-node clusters, replace with Longhorn or NFS.
+#
+# To verify storage class is available:
+#   kubectl get storageclass
+#   kubectl describe storageclass local-path

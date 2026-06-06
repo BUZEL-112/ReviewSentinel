@@ -1,0 +1,178 @@
+# ==============================================================================
+# ReviewSentinel — Pipeline Parameters
+# ==============================================================================
+# This is the orchestration hub. Every pipeline, flow, and subsystem reads
+# its operational configuration from this file:
+#
+#   - src/pipeline/train_pipeline.py       (TrainingPipeline)
+#   - src/pipeline/evaluate_pipeline.py    (EvaluationPipeline)
+#   - src/pipeline/inference_pipeline.py   (InferencePipeline)
+#   - src/orchestration/flows.py           (Prefect flows)
+#   - src/orchestration/validation.py      (DataValidator)
+#   - src/monitoring/drift_monitor.py      (DriftMonitor)
+#   - src/llm_judge/judge.py               (LLMJudge)
+#   - src/search/encoder.py                (SentenceEncoder)
+#   - scripts/ci/check_model_quality.py    (CI quality gate)
+# ==============================================================================
+
+
+# ==============================================================================
+# Training Pipeline
+# ==============================================================================
+training_pipeline:
+  pipeline:
+    stages:
+      - load_data
+      - clean_data
+      - train_model
+      - evaluate_model
+
+  training:
+    model_type: "distilbert"
+    target_column: "label"
+    config_path: "configs/config.yaml"
+    model_params_path: "configs/model_params.yaml"
+
+  evaluation:
+    save_dir: "artifacts/evaluation"
+    best_model_dir: "artifacts/best_model"
+
+
+# ==============================================================================
+# Evaluation Pipeline
+# ==============================================================================
+evaluation_pipeline:
+  data:
+    data_path: "data/processed/cleaned_data.csv"
+
+  training:
+    config_path: "configs/config.yaml"
+    model_type: "distilbert"
+    target_column: "label"
+
+  evaluation:
+    save_dir: "artifacts/evaluation"
+    best_model_dir: "artifacts/best_model"
+
+  aspect:
+    run_evaluation: false
+    model_dir: "artifacts/models/aspect_model"
+    sample_texts:
+      - "It arrived two weeks late and the packaging was damaged."
+      - "The product is completely useless and doesn't work at all."
+      - "Feels like a counterfeit, not what was shown in the listing."
+
+
+# ==============================================================================
+# Inference Pipeline
+# ==============================================================================
+inference_pipeline:
+  model_dir: "artifacts/models/distilbert"
+  max_len: 512
+  batch_separator: "|||"
+  save_results: false
+  output_path: "artifacts/inference/inference_results.csv"
+  run_aspect_model: false
+  aspect_model_dir: "artifacts/models/aspect_model"
+
+
+# ==============================================================================
+# MLflow  (shared by flows.py, monitoring_tasks.py, judge_tasks.py, CI gate)
+# ==============================================================================
+mlflow:
+  tracking_uri: "http://mlflow:5000"
+  experiment_name: "reviewsentinel-training"
+
+
+# ==============================================================================
+# Prefect Orchestration  (consumed by flows.py)
+# ==============================================================================
+orchestration:
+  quality_gate:
+    min_f1_improvement: 0.01
+    baseline_metric: "f1"
+    first_run_auto_deploy: true
+
+  validation:
+    max_null_ratio: 0.10
+    max_class_imbalance: 0.80
+    min_row_count: 100
+
+  notifications:
+    on_failure: true
+    on_quality_gate_block: true
+
+
+# ==============================================================================
+# Monitoring  (consumed by DriftMonitor, monitoring_tasks.py, report_server.py)
+# ==============================================================================
+monitoring:
+  drift:
+    time_window_days: 7
+    min_current_samples: 50
+    alert_threshold: 0.30
+    retrain_threshold: 0.50
+    statistical_test: "wasserstein"
+    significance_level: 0.05
+
+  prediction_log:
+    path: "artifacts/monitoring/prediction_log.jsonl"
+    max_size_mb: 100
+    retention_days: 30
+
+  reports:
+    output_dir: "artifacts/monitoring/reports"
+    keep_last_n: 12
+
+  schedule:
+    cron: "0 3 * * 1"              # every Monday at 3 AM
+
+
+# ==============================================================================
+# LLM Judge  (consumed by LLMJudge, judge_tasks.py, api.py)
+# ==============================================================================
+llm_judge:
+  confidence_window:
+    lower: 0.40
+    upper: 0.60
+
+  ollama:
+    base_url: "http://ollama:11434"
+    model_name: "mistral"
+    temperature: 0.1
+    timeout_seconds: 30
+
+  queue:
+    db_path: "artifacts/llm_judge/review_queue.db"
+    batch_size: 50
+    max_age_minutes: 10
+    retention_days: 7
+
+  conflicts:
+    db_path: "artifacts/llm_judge/conflicts.db"
+    min_judge_confidence: 0.60
+    export_on_retrain: true
+
+  schedule:
+    cron: "0 */4 * * *"            # every 4 hours
+
+
+# ==============================================================================
+# Semantic Search  (consumed by SentenceEncoder, IndexBuilder, Searcher)
+# ==============================================================================
+semantic_search:
+  encoder:
+    model_name: "all-MiniLM-L6-v2"
+    batch_size: 64
+
+  index:
+    type: "IndexFlatIP"
+    dir: "artifacts/search/"
+
+  search:
+    default_top_k: 5
+    self_match_threshold: 0.999
+
+  build:
+    rebuild_on_deploy: true
+    max_index_rows: 50000

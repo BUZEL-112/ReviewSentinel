@@ -1,0 +1,223 @@
+version: '3.8'
+
+networks:
+  reviewsentinel-net:
+    driver: bridge
+
+volumes:
+  minio_data:
+  mlflow_data:
+  prefect_data:
+  ollama_data:
+
+services:
+  minio:
+    image: minio/minio
+    container_name: minio
+    networks:
+      - reviewsentinel-net
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    ports:
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  minio-init:
+    image: minio/mc
+    container_name: minio-init
+    networks:
+      - reviewsentinel-net
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    volumes:
+      - ./docker/minio/init.sh:/init.sh
+    entrypoint: ["/bin/sh", "/init.sh"]
+
+  mlflow:
+    build:
+      context: ../
+      dockerfile: docker/mlflow/Dockerfile
+    container_name: mlflow
+    networks:
+      - reviewsentinel-net
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      MLFLOW_S3_ENDPOINT_URL: http://minio:9000
+      AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER}
+      AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD}
+      AWS_DEFAULT_REGION: us-east-1
+    ports:
+      - "5000:5000"
+    volumes:
+      - mlflow_data:/mlflow
+    healthcheck:
+      test: ["CMD", "curl", "-s", "http://localhost:5000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  prefect-server:
+    build:
+      context: ../
+      dockerfile: docker/prefect/Dockerfile
+    container_name: prefect-server
+    networks:
+      - reviewsentinel-net
+    environment:
+      PREFECT_SERVER_API_HOST: 0.0.0.0
+      PREFECT_API_URL: http://127.0.0.1:4200/api
+    ports:
+      - "4200:4200"
+    volumes:
+      - prefect_data:/root/.prefect
+    command: ["server"]
+    healthcheck:
+      test: ["CMD", "curl", "-s", "http://localhost:4200/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  prefect-worker:
+    build:
+      context: ../
+      dockerfile: docker/prefect/Dockerfile
+    container_name: prefect-worker
+    networks:
+      - reviewsentinel-net
+    depends_on:
+      prefect-server:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      ollama:
+        condition: service_healthy
+    environment:
+      PREFECT_API_URL: ${PREFECT_API_URL:-http://prefect-server:4200/api}
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+      MLFLOW_S3_ENDPOINT_URL: http://minio:9000
+      AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER}
+      AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD}
+      AWS_DEFAULT_REGION: us-east-1
+      OLLAMA_BASE_URL: http://ollama:11434
+      PYTHONPATH: /app
+    volumes:
+      - ../src:/app/src
+      - ../configs:/app/configs
+      - ../artifacts:/app/artifacts
+      - ../prefect.yaml:/app/prefect.yaml
+    command: ["worker"]
+
+  api:
+    build:
+      context: ../
+      dockerfile: docker/api/Dockerfile
+    container_name: reviewsentinel-api
+    networks:
+      - reviewsentinel-net
+    depends_on:
+      mlflow:
+        condition: service_healthy
+      prefect-server:
+        condition: service_healthy
+    environment:
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+      MLFLOW_S3_ENDPOINT_URL: http://minio:9000
+      AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER}
+      AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD}
+      AWS_DEFAULT_REGION: us-east-1
+      MODEL_DIR: ${MODEL_DIR:-artifacts/models/distilbert-finetuned/}
+      OLLAMA_BASE_URL: http://ollama:11434
+      PYTHONPATH: /app
+    ports:
+      - "8000:8000"
+    volumes:
+      - ../configs:/app/configs
+      - ../artifacts:/app/artifacts
+    healthcheck:
+      test: ["CMD", "curl", "-s", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  nginx:
+    build:
+      context: ../
+      dockerfile: docker/nginx/Dockerfile
+    container_name: nginx
+    networks:
+      - reviewsentinel-net
+    depends_on:
+      - api
+      - mlflow
+    ports:
+      - "80:80"
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    networks:
+      - reviewsentinel-net
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    # healthcheck:
+    #   test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+    #   interval: 10s
+    #   timeout: 5s
+    #   retries: 5
+
+    healthcheck:
+      test: ["CMD", "ollama", "list"]   # Use native CLI instead of curl
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+
+  ollama-init:
+    image: ollama/ollama:latest
+    container_name: ollama-init
+    networks:
+      - reviewsentinel-net
+    depends_on:
+      ollama:
+        condition: service_healthy
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+    entrypoint: ["/bin/sh", "-c"]
+    command: "sleep 5 && ollama pull mistral"
+
+  search-index-builder:
+    build:
+      context: ../
+      dockerfile: docker/api/Dockerfile
+    container_name: search-index-builder
+    restart: "no"
+    networks:
+      - reviewsentinel-net
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      PYTHONPATH: /app
+      TRANSFORMERS_CACHE: /app/artifacts/sentence_transformers
+    volumes:
+      - ../src:/app/src
+      - ../scripts:/app/scripts
+      - ../configs:/app/configs
+      - ../artifacts:/app/artifacts
+    command: ["python", "scripts/build_search_index.py", "--output-dir", "artifacts/search/"]

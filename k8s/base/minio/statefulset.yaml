@@ -1,0 +1,79 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: minio
+  namespace: reviewsentinel
+  labels:
+    app: minio
+    project: reviewsentinel
+spec:
+  serviceName: minio
+  replicas: 1
+  selector:
+    matchLabels:
+      app: minio
+  template:
+    metadata:
+      labels:
+        app: minio
+        project: reviewsentinel
+    spec:
+      containers:
+        - name: minio
+          image: minio/minio:RELEASE.2024-03-15T01-07-19Z    # pinned, not latest
+          command:
+            - minio
+            - server
+            - /data
+            - --console-address
+            - ":9001"
+          
+          ports:
+            - containerPort: 9000
+              name: s3-api
+            - containerPort: 9001
+              name: console
+          
+          env:
+            - name: MINIO_ROOT_USER
+              valueFrom:
+                secretKeyRef:
+                  name: reviewsentinel-secrets
+                  key: minio-root-user
+            - name: MINIO_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: reviewsentinel-secrets
+                  key: minio-root-password
+          
+          volumeMounts:
+            - name: minio-data
+              mountPath: /data
+          
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          
+          livenessProbe:
+            httpGet:
+              path: /minio/health/live
+              port: 9000
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            failureThreshold: 3
+          
+          readinessProbe:
+            httpGet:
+              path: /minio/health/ready
+              port: 9000
+            initialDelaySeconds: 20
+            periodSeconds: 10
+      
+      volumes:
+        - name: minio-data
+          persistentVolumeClaim:
+            claimName: minio-data
