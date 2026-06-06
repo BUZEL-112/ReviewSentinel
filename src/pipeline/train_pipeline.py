@@ -84,12 +84,15 @@ class TrainingPipeline:
                     df = LoadData().load_data()
 
                 elif stage == "clean_data":
-                    cleaner = CleanDataBERT()
-                    # The prepare_datasets method handles cleaning, labeling, and splitting
-                    self.train_dataset, self.val_dataset, self.test_dataset, self.test_labels = cleaner.prepare_datasets(self.df)
-                    cleaner.tokenizer.save_pretrained(self.output_dir)
-                    logger.info(f"Datasets ready — Train: {len(self.train_dataset)}, "
-                            f"Val: {len(self.val_dataset)}, Test: {len(self.test_dataset)}")
+                    continue
+                #     cleaner = CleanDataBERT()
+                #     # The prepare_datasets method handles cleaning, labeling, and splitting
+                #     self.train_dataset, self.val_dataset, self.test_dataset, self.test_labels = cleaner.prepare_datasets(df)
+                #     cleaner.tokenizer.save_pretrained(self.output_dir)
+                #     logger.info(f"Datasets ready — Train: {len(self.train_dataset)}, "
+                #             f"Val: {len(self.val_dataset)}, Test: {len(self.test_dataset)}")
+
+                ## the cleandata has been previously integrated the model trainer 
 
                 elif stage == "train_model":
                     if df is None:
