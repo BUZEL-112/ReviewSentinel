@@ -30,7 +30,21 @@ class IndexBuilder:
         mlflow_uri = os.environ.get("MLFLOW_TRACKING_URI") or config_uri
 
         mlflow.set_tracking_uri(mlflow_uri)
-        mlflow.set_experiment("search_index")
+        
+        try:
+            # THIS is the line that actually makes the network call and crashes if outside Docker
+            mlflow.set_experiment("search_index")
+            logger.info(f"Successfully connected to MLflow at {mlflow_uri}")
+            
+        except Exception as e:
+            # 3. Catch the DNS/Connection error and fall back to localhost
+            fallback_uri = "http://localhost:5000"
+            logger.warning(f"Could not reach {mlflow}. Falling back to {fallback_uri}. Error: {e}")
+            
+            mlflow.set_tracking_uri(fallback_uri)
+            # Retry the connection with localhost
+            mlflow.set_experiment("search_index")
+            logger.info("Successfully connected to MLflow via localhost.")
 
         with mlflow.start_run(run_name="build_index", nested=True):
             mlflow.log_params({
