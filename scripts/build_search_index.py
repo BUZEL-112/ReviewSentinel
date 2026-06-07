@@ -1,6 +1,11 @@
 import argparse
 import logging
 from pathlib import Path
+import os, sys
+
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+sys.path.append(project_root)
 
 from src.search.index_builder import IndexBuilder
 

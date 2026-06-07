@@ -43,7 +43,7 @@ class InferencePipeline:
     Optionally enriches results with aspect classification via SetFit.
     """
 
-    def __init__(self, config_path: str = str(Path("configs/inference_pipeline.yaml"))):
+    def __init__(self, config_path: str = str(Path("configs/pipeline_params.yaml"))):
         """
         Initializes the pipeline by loading config, tokenizer, and model.
 
