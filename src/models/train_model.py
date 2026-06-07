@@ -18,8 +18,6 @@ from src.models.build_model import ModelBuilder
 from src.data.clean_data import CleanDataBERT
 from src.utils.logger import logger
 from src.utils.exception import CustomException
-from src.utils.config_parser import resolve_tracking_uri
-
 
 class ModelTrainer:
     """
@@ -46,11 +44,23 @@ class ModelTrainer:
         mlflow_cfg = self.config.get("mlflow", {})
         tracking_uri = mlflow_cfg.get("tracking_uri", "http://mlflow:5000")
         experiment_name = mlflow_cfg.get("experiment_name", "distilbert_training")
-        # Convert Docker service URIs to localhost when needed to avoid MLflow tracking URI conflicts between containerized and local runs
-        tracking_uri = resolve_tracking_uri(tracking_uri)
-
+        
         mlflow.set_tracking_uri(tracking_uri)
-        mlflow.set_experiment(experiment_name)
+        
+        try:
+            # THIS is the line that actually makes the network call and crashes if outside Docker
+            mlflow.set_experiment(experiment_name)
+            logger.info(f"Successfully connected to MLflow at {tracking_uri}")
+            
+        except Exception as e:
+            # 3. Catch the DNS/Connection error and fall back to localhost
+            fallback_uri = "http://localhost:5000"
+            logger.warning(f"Could not reach {tracking_uri}. Falling back to {fallback_uri}. Error: {e}")
+            
+            mlflow.set_tracking_uri(fallback_uri)
+            # Retry the connection with localhost
+            mlflow.set_experiment(experiment_name)
+            logger.info("Successfully connected to MLflow via localhost.")
         
         logger.info("ModelTrainer initialized successfully with MLflow tracking.")
 
