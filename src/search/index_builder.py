@@ -1,4 +1,5 @@
 import yaml
+import os
 import logging
 from pathlib import Path
 import pandas as pd
@@ -10,29 +11,27 @@ from src.search.indexer import FAISSIndexer
 logger = logging.getLogger(__name__)
 
 class IndexBuilder:
+
     def build_from_dataframe(self, df: pd.DataFrame, output_dir: str, config_path: str = "configs/pipeline_params.yaml"):
         with open(config_path, "r") as f:
-            cfg = yaml.safe_load(f).get("semantic_search", {})
-            
+            full_cfg = yaml.safe_load(f)
+            cfg = full_cfg.get("semantic_search", {})
+
         encoder_cfg = cfg.get("encoder", {})
         model_name = encoder_cfg.get("model_name", "all-MiniLM-L6-v2")
         batch_size = encoder_cfg.get("batch_size", 64)
-        
+
         encoder = SentenceEncoder(model_name=model_name, batch_size=batch_size)
         indexer = FAISSIndexer(index_dir=output_dir)
-        
         indexer.build(df, encoder, text_column="clean_text")
-        
-        mlflow_uri = "http://localhost:5000"
-        try:
-            with open("configs/config.yaml", "r") as f:
-                mlflow_uri = yaml.safe_load(f).get("mlflow", {}).get("tracking_uri", mlflow_uri)
-        except Exception:
-            pass
-            
+
+        # Consistent env-var-first resolution, same pattern as train_model.py
+        config_uri = full_cfg.get("mlflow", {}).get("tracking_uri", "./mlruns")
+        mlflow_uri = os.environ.get("MLFLOW_TRACKING_URI") or config_uri
+
         mlflow.set_tracking_uri(mlflow_uri)
         mlflow.set_experiment("search_index")
-        
+
         with mlflow.start_run(run_name="build_index", nested=True):
             mlflow.log_params({
                 "corpus_size": len(df),

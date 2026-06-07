@@ -68,6 +68,7 @@ The training pipeline is responsible for orchestrating the entire process of tra
 To run the training pipeline, you can execute the following command from the root directory of the project:
 
 ```bash
+!mlflow ui --host 0.0.0.0 --port 5000
 python src/pipeline/train_pipeline.py
 ```
 

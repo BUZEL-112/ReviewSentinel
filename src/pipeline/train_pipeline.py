@@ -112,16 +112,23 @@ class TrainingPipeline:
                             "Trainer not initialized before evaluation."
                         )
                     evaluator = ModelEvaluator()
-                    X_test, y_test = trainer.X_test, trainer.y_test
+                    
+                    # 1. Fetch the HuggingFace dataset and trainer instance
+                    test_dataset = trainer.test_dataset
+                    hf_trainer = trainer.trainer
                     model_type = self.training_cfg.get("model_type")
+                    
+                    # 2. Pass the correct arguments matching evaluate_model.py
                     metrics = evaluator.evaluate(
-                        trainer.models[model_type], X_test, y_test, model_type
+                        hf_trainer, test_dataset, model_type
                     )
+                    
                     evaluator.save_results(
                         {model_type: metrics}, output_dir=self.eval_cfg.get("save_dir")
                     )
+                    
+                    # 3. Remove the extra 'model_type' string argument here
                     evaluator.save_best_model(
-                        model_type,
                         trainer.models[model_type],
                         output_dir=self.eval_cfg.get("best_model_dir"),
                     )
