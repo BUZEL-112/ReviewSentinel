@@ -267,8 +267,17 @@ class InferencePipeline:
             # 4. Optionally persist results to CSV
             if self.save_results:
                 os.makedirs(os.path.dirname(self.output_path), exist_ok=True)
-                df.to_csv(self.output_path, index=False)
-                logger.info(f"Results saved to: {self.output_path}")
+                
+                # Check if file exists so we don't duplicate headers on every append
+                file_exists = os.path.exists(self.output_path)
+                
+                df.to_csv(
+                    self.output_path, 
+                    mode='a', 
+                    index=False, 
+                    header=not file_exists
+                )
+                logger.info(f"Results appended to: {self.output_path}")
 
             logger.info("Inference completed successfully.")
             return df

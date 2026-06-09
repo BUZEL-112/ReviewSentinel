@@ -21,10 +21,12 @@ import uuid
 import asyncio
 import time
 import re
+import threading
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from contextlib import asynccontextmanager
 from typing import Dict, List, Optional
+
 
 from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
@@ -53,7 +55,7 @@ from src.utils.logger import logger
 from src.utils.exception import CustomException
 from src.pipeline.inference_pipeline import InferencePipeline
 from src.explainability.shap_explainer import SentimentExplainer
-
+from prefect.events import emit_event
 # --------------------------------------------------------------------------
 # Prometheus metrics (defined at module level — one instance for the process)
 # --------------------------------------------------------------------------
@@ -395,18 +397,50 @@ async def _async_run(title: str, text: Optional[str], batch_mode: bool):
     return await loop.run_in_executor(_executor, _sync_run, title, text, batch_mode)
 
 
+
+
+
+_model_missing_event_lock = threading.Lock()
+_last_event_emitted_at: float | None = None
+_EVENT_COOLDOWN_SECONDS = 300  # 5 minutes
+
+
+def _emit_model_missing_event():
+    """Emit a model.missing event, rate-limited to once per cooldown window."""
+    global _last_event_emitted_at
+
+    with _model_missing_event_lock:
+        now = time.monotonic()
+        if (
+            _last_event_emitted_at is not None
+            and now - _last_event_emitted_at < _EVENT_COOLDOWN_SECONDS
+        ):
+            logger.info("model.missing event suppressed — cooldown active.")
+            return
+
+        try:
+            emit_event(
+                event="model.missing",
+                resource={"prefect.resource.id": "reviewsentinel.api"},
+                payload={"message": "Inference pipeline failed to load model artifacts."},
+            )
+            _last_event_emitted_at = now
+            logger.warning("Emitted 'model.missing' event to Prefect.")
+        except Exception as e:
+            logger.error(f"Failed to emit Prefect event: {e}")
+
+
 def _ensure_pipeline():
     """Raise 503 if pipeline is unavailable; attempt lazy init first."""
     global pipeline
     if pipeline is None:
         _initialize_pipeline()
     if pipeline is None:
+        _emit_model_missing_event()
         raise HTTPException(
             status_code=503,
-            detail="Inference pipeline unavailable — check server logs.",
+            detail="Inference pipeline unavailable. A self-healing training job has been triggered. Please try again in a few minutes.",
         )
-
-
 searcher = None
 
 def _initialize_searcher():

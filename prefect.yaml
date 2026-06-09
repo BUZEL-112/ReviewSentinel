@@ -10,7 +10,7 @@ push: null
 # pull section allows you to provide instructions for cloning this project in remote locations
 pull:
 - prefect.deployments.steps.set_working_directory:
-    directory: /opt/prefect/project
+    directory: /app
 
 # the deployments section allows you to provide configuration for deploying flows
 deployments:
@@ -28,6 +28,12 @@ deployments:
     - cron: "0 2 * * 1"
       timezone: "UTC"
       active: true
+  triggers:
+    - enabled: true
+      match:
+        prefect.resource.id: "reviewsentinel.api"
+      expect:
+        - "model.missing"
 
 - name: weekly-drift-monitoring
   version: null
@@ -56,5 +62,18 @@ deployments:
     job_variables: {}
   schedules:
     - cron: "0 */4 * * *"
+      timezone: "UTC"
+      active: true
+      
+- name: proactive-health-watchdog
+  version: null
+  tags: ["monitoring", "self-healing"]
+  description: Polls the API health endpoint and triggers training if the model drops.
+  entrypoint: src/orchestration/watchdog_flow.py:watchdog_flow
+  parameters: {}
+  work_pool:
+    name: default-agent-pool
+  schedules:
+    - interval: 300  # Runs every 5 minutes (300 seconds)
       timezone: "UTC"
       active: true

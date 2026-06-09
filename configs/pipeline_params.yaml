@@ -70,7 +70,7 @@ inference_pipeline:
   model_dir: "artifacts/models/distilbert"
   max_len: 512
   batch_separator: "|||"
-  save_results: false
+  save_results: true
   output_path: "artifacts/inference/inference_results.csv"
   run_aspect_model: false
   aspect_model_dir: "artifacts/models/aspect_model"

@@ -13,6 +13,33 @@ from src.models.evaluate_model import ModelEvaluator
 from src.orchestration.validation import DataValidator
 from src.utils.logger import logger
 from prefect.cache_policies import NO_CACHE
+from prefect import task, flow
+
+import boto3
+import os
+from botocore.exceptions import ClientError
+
+
+
+@task(name="Ensure Artifact Bucket Exists", retries=2, retry_delay_seconds=5)
+def setup_minio_bucket(bucket_name="reviewsentinel-artifacts"):
+    """Ensures the target MinIO bucket exists before training starts."""
+    endpoint_url = os.environ.get('MLFLOW_S3_ENDPOINT_URL')
+    
+    # Boto3 will automatically pick up AWS_ACCESS_KEY_ID from the environment
+    s3 = boto3.client('s3', endpoint_url=endpoint_url)
+    
+    try:
+        s3.head_bucket(Bucket=bucket_name)
+        logger.info(f"Bucket '{bucket_name}' already exists.")
+    except ClientError as e:
+        error_code = e.response['Error']['Code']
+        if error_code == '404':
+            logger.info(f"Bucket '{bucket_name}' not found. Creating it now...")
+            s3.create_bucket(Bucket=bucket_name)
+        else:
+            raise e
+
 
 @task(name="Load Raw Data", retries=3, retry_delay_seconds=[30, 60, 120], tags=["data", "ingestion"])
 def load_data_task(config_path: str) -> pd.DataFrame:
@@ -166,7 +193,7 @@ from src.orchestration.search_tasks import rebuild_search_index_task
 @flow(name="ReviewSentinel Training Pipeline", description="Weekly automated training pipeline for ReviewSentinel", log_prints=True)
 def training_flow(config_path: str = "configs/pipeline_params.yaml"):
     logger.info(f"Starting Prefect training flow with config: {config_path}")
-    
+    setup_minio_bucket()
     # 1. Load Data
     df = load_data_task(config_path)
     
