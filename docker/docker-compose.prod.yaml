@@ -1,0 +1,137 @@
+services:
+  minio:
+    image: minio/minio:latest
+    container_name: reviewsentinel-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    networks:
+      - reviewsentinel-net
+
+  minio-init:
+    image: minio/mc:latest
+    container_name: minio-init
+    depends_on:
+      - minio
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    entrypoint: >
+      /bin/sh -c "
+      sleep 5;
+      mc alias set myminio http://minio:9000 ${MINIO_ROOT_USER} ${MINIO_ROOT_PASSWORD};
+      mc mb myminio/reviewsentinel-artifacts || true;
+      mc anonymous set public myminio/reviewsentinel-artifacts;
+      "
+    networks:
+      - reviewsentinel-net
+
+  mlflow:
+    image: ghcr.io/buzel-112/reviewsentinel-mlflow:latest
+    container_name: reviewsentinel-mlflow
+    depends_on:
+      - minio
+    environment:
+      MLFLOW_S3_ENDPOINT_URL: http://minio:9000
+      AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER}
+      AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD}
+    ports:
+      - "5000:5000"
+    volumes:
+      - mlflow_data:/mlflow
+    networks:
+      - reviewsentinel-net
+
+  prefect-server:
+    image: ghcr.io/buzel-112/reviewsentinel-prefect-server:latest
+    container_name: reviewsentinel-prefect-server
+    ports:
+      - "4200:4200"
+    volumes:
+      - prefect_data:/root/.prefect
+    networks:
+      - reviewsentinel-net
+
+  prefect-worker:
+    image: ghcr.io/buzel-112/reviewsentinel-prefect-worker:latest
+    container_name: reviewsentinel-prefect-worker
+    depends_on:
+      - prefect-server
+      - mlflow
+      - minio
+    environment:
+      PREFECT_API_URL: http://prefect-server:4200/api
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+      MLFLOW_S3_ENDPOINT_URL: http://minio:9000
+      AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER}
+      AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD}
+    volumes:
+      - ../data:/app/data
+      - ../artifacts:/app/artifacts
+      - ../configs:/app/configs
+    networks:
+      - reviewsentinel-net
+
+  api:
+    image: ghcr.io/buzel-112/reviewsentinel-api:latest
+    container_name: reviewsentinel-api
+    depends_on:
+      - mlflow
+      - prefect-server
+    environment:
+      PREFECT_API_URL: http://prefect-server:4200/api
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+      MLFLOW_S3_ENDPOINT_URL: http://minio:9000
+      AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER}
+      AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD}
+    ports:
+      - "8000:8000"
+    volumes:
+      - ../artifacts:/app/artifacts
+      - ../configs:/app/configs
+    networks:
+      - reviewsentinel-net
+
+  search-index-builder:
+    image: ghcr.io/buzel-112/reviewsentinel-search-index-builder:latest
+    container_name: search-index-builder
+    depends_on:
+      - minio
+    environment:
+      MLFLOW_S3_ENDPOINT_URL: http://minio:9000
+      AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER}
+      AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD}
+    volumes:
+      - ../artifacts:/app/artifacts
+      - ../data:/app/data
+      - ../configs:/app/configs
+    networks:
+      - reviewsentinel-net
+
+  nginx:
+    image: ghcr.io/buzel-112/reviewsentinel-nginx:latest
+    container_name: reviewsentinel-nginx
+    depends_on:
+      - api
+      - prefect-server
+      - mlflow
+    ports:
+      - "80:80"
+    networks:
+      - reviewsentinel-net
+
+networks:
+  reviewsentinel-net:
+    name: reviewsentinel-net  
+    driver: bridge
+
+volumes:
+  minio_data:
+  mlflow_data:
+  prefect_data:
