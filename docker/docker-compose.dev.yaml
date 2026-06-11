@@ -15,3 +15,9 @@ services:
   mlflow:
     environment:
       LOG_LEVEL: DEBUG
+      
+  prefect-init:
+    environment:
+      PREFECT_API_URL: http://prefect-server:4200/api
+    volumes:
+      - ../scripts:/app/scripts  # live-reload your script too

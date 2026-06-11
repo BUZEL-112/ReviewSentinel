@@ -13,7 +13,6 @@ kubectl create secret generic reviewsentinel-secrets \
   --namespace="$NAMESPACE" \
   --from-literal=minio-root-user="$MINIO_ROOT_USER" \
   --from-literal=minio-root-password="$MINIO_ROOT_PASSWORD" \
-  --from-literal=hcloud-token="$HCLOUD_TOKEN" \
   --dry-run=client -o yaml | kubectl apply -f -
 
 # MLflow database credentials (if using Postgres instead of SQLite)
