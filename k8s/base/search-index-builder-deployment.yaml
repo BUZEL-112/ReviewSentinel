@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert -f docker/docker-compose.prod.yaml -o k8s/base/
+    kompose.version: 1.31.2 (a92241f79)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: search-index-builder
+  name: search-index-builder
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: search-index-builder
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert -f docker/docker-compose.prod.yaml -o k8s/base/
+        kompose.version: 1.31.2 (a92241f79)
+      creationTimestamp: null
+      labels:
+        io.kompose.network/reviewsentinel-net: "true"
+        io.kompose.service: search-index-builder
+    spec:
+      containers:
+        - env:
+            - name: AWS_ACCESS_KEY_ID
+              value: reviewsentinel
+            - name: AWS_SECRET_ACCESS_KEY
+              value: changeme123
+            - name: MLFLOW_S3_ENDPOINT_URL
+              value: http://minio:9000
+          image: ghcr.io/buzel-112/reviewsentinel-search-index-builder:latest
+          name: search-index-builder
+          resources: {}
+          volumeMounts:
+            - mountPath: /app/artifacts
+              name: search-index-builder-claim0
+            - mountPath: /app/data
+              name: search-index-builder-claim1
+            - mountPath: /app/configs
+              name: search-index-builder-claim2
+      restartPolicy: Always
+      volumes:
+        - name: search-index-builder-claim0
+          persistentVolumeClaim:
+            claimName: search-index-builder-claim0
+        - name: search-index-builder-claim1
+          persistentVolumeClaim:
+            claimName: search-index-builder-claim1
+        - name: search-index-builder-claim2
+          persistentVolumeClaim:
+            claimName: search-index-builder-claim2
+status: {}

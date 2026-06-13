@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert -f docker/docker-compose.prod.yaml -o k8s/base/
+    kompose.version: 1.31.2 (a92241f79)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: nginx
+  name: nginx
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: nginx
+  strategy: {}
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert -f docker/docker-compose.prod.yaml -o k8s/base/
+        kompose.version: 1.31.2 (a92241f79)
+      creationTimestamp: null
+      labels:
+        io.kompose.network/reviewsentinel-net: "true"
+        io.kompose.service: nginx
+    spec:
+      volumes:
+        - name: nginx-config-volume
+          configMap:
+            name: nginx-config
+      containers:
+        - image: ghcr.io/buzel-112/reviewsentinel-nginx:latest
+          volumeMounts:
+            - name: nginx-config-volume
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
+          name: reviewsentinel-nginx
+          ports:
+            - containerPort: 80
+              protocol: TCP
+          resources: {}
+      restartPolicy: Always
+status: {}

@@ -1,0 +1,41 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-config
+  namespace: reviewsentinel
+data:
+  nginx.conf: |
+    events {
+        worker_connections 1024;
+    }
+    http {
+        # Docker resolver removed. Nginx will now default to Kubernetes CoreDNS.
+        server {
+            listen 80;
+            location /api/ {
+                proxy_pass http://api:8000/;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            }
+            location /monitoring/ {
+                proxy_pass http://api:8000/monitoring/;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            }
+            location /mlflow/ {
+                proxy_pass http://mlflow:5000/;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_redirect off;
+            }
+            location / {
+                proxy_pass http://prefect-server:4200/;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            }
+        }
+    }
