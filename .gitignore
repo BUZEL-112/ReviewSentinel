@@ -290,4 +290,7 @@ known_hosts.old
 /root/.ssh/known_hosts.old
 
 
-colabtest.ipynb
+colabtest.ipynbkind-config.yaml
+get-docker.sh
+kubectl
+data/

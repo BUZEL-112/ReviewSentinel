@@ -67,6 +67,8 @@ spec:
       containers:
       - name: prefect-server
         image: ghcr.io/buzel-112/reviewsentinel-prefect-server:latest
+        command: ["/bin/sh", "-c"]
+        args: ["prefect server start --host 0.0.0.0"]
         ports:
         - containerPort: 4200
         volumeMounts:
@@ -119,6 +121,8 @@ spec:
             secretKeyRef:
               name: reviewsentinel-secrets
               key: MINIO_ROOT_PASSWORD
+        command: ["/bin/sh", "-c"]
+        args: ["prefect worker start --pool default-pool"]
         volumeMounts:
         - name: host-data
           mountPath: /app/data
