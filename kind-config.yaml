@@ -1,0 +1,17 @@
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+- role: control-plane
+  # 1. Mount your host filesystem into the kind node
+  extraMounts:
+  - hostPath: /workspaces/ReviewSentinel/data
+    containerPath: /data
+  - hostPath: /workspaces/ReviewSentinel/artifacts
+    containerPath: /artifacts
+  - hostPath: /workspaces/ReviewSentinel/configs
+    containerPath: /configs
+  # 2. Map the node port to the Codespace host
+  extraPortMappings:
+  - containerPort: 30080
+    hostPort: 30080
+    protocol: TCP

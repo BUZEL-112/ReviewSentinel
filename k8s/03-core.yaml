@@ -1,0 +1,138 @@
+# MLFLOW
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mlflow
+spec:
+  selector:
+    matchLabels:
+      app: mlflow
+  template:
+    metadata:
+      labels:
+        app: mlflow
+    spec:
+      containers:
+      - name: mlflow
+        image: ghcr.io/buzel-112/reviewsentinel-mlflow:latest
+        envFrom:
+        - configMapRef:
+            name: reviewsentinel-configs
+        env:
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              name: reviewsentinel-secrets
+              key: MINIO_ROOT_USER
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: reviewsentinel-secrets
+              key: MINIO_ROOT_PASSWORD
+        ports:
+        - containerPort: 5000
+        volumeMounts:
+        - name: mlflow-data
+          mountPath: /mlflow
+      volumes:
+      - name: mlflow-data
+        persistentVolumeClaim:
+          claimName: mlflow-data-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mlflow
+spec:
+  selector:
+    app: mlflow
+  ports:
+    - port: 5000
+      targetPort: 5000
+---
+# PREFECT SERVER
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prefect-server
+spec:
+  selector:
+    matchLabels:
+      app: prefect-server
+  template:
+    metadata:
+      labels:
+        app: prefect-server
+    spec:
+      containers:
+      - name: prefect-server
+        image: ghcr.io/buzel-112/reviewsentinel-prefect-server:latest
+        ports:
+        - containerPort: 4200
+        volumeMounts:
+        - name: prefect-data
+          mountPath: /root/.prefect
+      volumes:
+      - name: prefect-data
+        persistentVolumeClaim:
+          claimName: prefect-data-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prefect-server
+spec:
+  selector:
+    app: prefect-server
+  ports:
+    - port: 4200
+      targetPort: 4200
+---
+# PREFECT WORKER (No Service Needed)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prefect-worker
+spec:
+  selector:
+    matchLabels:
+      app: prefect-worker
+  template:
+    metadata:
+      labels:
+        app: prefect-worker
+    spec:
+      containers:
+      - name: prefect-worker
+        image: ghcr.io/buzel-112/reviewsentinel-prefect-worker:latest
+        envFrom:
+        - configMapRef:
+            name: reviewsentinel-configs
+        env:
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              name: reviewsentinel-secrets
+              key: MINIO_ROOT_USER
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: reviewsentinel-secrets
+              key: MINIO_ROOT_PASSWORD
+        volumeMounts:
+        - name: host-data
+          mountPath: /app/data
+        - name: host-artifacts
+          mountPath: /app/artifacts
+        - name: host-configs
+          mountPath: /app/configs
+      volumes:
+      - name: host-data
+        hostPath:
+          path: /data
+      - name: host-artifacts
+        hostPath:
+          path: /artifacts
+      - name: host-configs
+        hostPath:
+          path: /configs
