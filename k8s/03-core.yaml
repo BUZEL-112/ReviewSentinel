@@ -111,6 +111,8 @@ spec:
         - configMapRef:
             name: reviewsentinel-configs
         env:
+        - name: PREFECT_API_URL
+          value: "http://prefect-server:4200/api"
         - name: AWS_ACCESS_KEY_ID
           valueFrom:
             secretKeyRef:
@@ -122,7 +124,55 @@ spec:
               name: reviewsentinel-secrets
               key: MINIO_ROOT_PASSWORD
         command: ["/bin/sh", "-c"]
-        args: ["prefect worker start --pool default-pool"]
+        args: ["prefect worker start --pool default-agent-pool"]
+        volumeMounts:
+        - name: host-data
+          mountPath: /app/data
+        - name: host-artifacts
+          mountPath: /app/artifacts
+        - name: host-configs
+          mountPath: /app/configs
+      volumes:
+      - name: host-data
+        hostPath:
+          path: /data
+      - name: host-artifacts
+        hostPath:
+          path: /artifacts
+      - name: host-configs
+        hostPath:
+          path: /configs
+
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: prefect-init
+spec:
+  # If it fails (e.g. server isn't ready yet), K8s will retry it up to 5 times
+  backoffLimit: 5
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+      - name: prefect-deploy
+        image: ghcr.io/buzel-112/reviewsentinel-prefect-worker:latest
+        envFrom:
+        - configMapRef:
+            name: reviewsentinel-configs
+        env:
+        - name: PREFECT_API_URL
+          value: "http://prefect-server:4200/api"
+        command: ["/bin/sh", "-c"]
+        args: 
+          - |
+            echo "Waiting for Prefect Server to initialize..."
+            sleep 15;
+            prefect work-pool create default-agent-pool --type process || true;
+            echo "Registering deployments from prefect.yaml..."
+            prefect deploy --all;
+            echo "Deployments registered successfully!"
+        # We mount the code and configs just like the worker so it can read prefect.yaml
         volumeMounts:
         - name: host-data
           mountPath: /app/data

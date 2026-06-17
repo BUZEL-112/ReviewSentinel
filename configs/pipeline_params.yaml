@@ -55,7 +55,7 @@ evaluation_pipeline:
     best_model_dir: "artifacts/best_model"
 
   aspect:
-    run_evaluation: false
+    run_evaluation: true
     model_dir: "artifacts/models/aspect_model"
     sample_texts:
       - "It arrived two weeks late and the packaging was damaged."
@@ -72,7 +72,7 @@ inference_pipeline:
   batch_separator: "|||"
   save_results: true
   output_path: "artifacts/inference/inference_results.csv"
-  run_aspect_model: false
+  run_aspect_model: true
   aspect_model_dir: "artifacts/models/aspect_model"
 
 
@@ -138,7 +138,7 @@ llm_judge:
 
   ollama:
     base_url: "http://ollama:11434"
-    model_name: "mistral"
+    model_name: "nemotron-3-nano:4b"
     temperature: 0.1
     timeout_seconds: 30
 

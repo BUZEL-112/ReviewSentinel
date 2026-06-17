@@ -200,7 +200,7 @@ services:
     environment:
       OLLAMA_HOST: http://ollama:11434
     entrypoint: ["/bin/sh", "-c"]
-    command: "sleep 5 && ollama pull mistral"
+    command: "sleep 5 && ollama pull nemotron-3-nano:4b"
 
   search-index-builder:
     build:

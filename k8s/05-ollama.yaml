@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ollama
+spec:
+  selector:
+    matchLabels:
+      app: ollama
+  template:
+    metadata:
+      labels:
+        app: ollama
+    spec:
+      containers:
+      - name: ollama
+        image: ollama/ollama:latest
+        ports:
+        - containerPort: 11434
+        volumeMounts:
+        - name: host-artifacts
+          mountPath: /root/.ollama
+      volumes:
+      - name: host-artifacts
+        hostPath:
+          path: /artifacts/ollama
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ollama
+spec:
+  selector:
+    app: ollama
+  ports:
+    - port: 11434
+      targetPort: 11434
+
+---# ADD THIS NEW SECTION: The Automated Puller
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ollama-init
+spec:
+  backoffLimit: 5
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+      - name: ollama-pull
+        image: ollama/ollama:latest
+        env:
+        - name: OLLAMA_HOST
+          value: "http://ollama:11434"
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            echo "Waiting for Ollama server to wake up..."
+            while ! ollama list > /dev/null 2>&1; do sleep 5; done            
+            echo "Pulling nemotron-3-nano:4b (This may take a few minutes)..."
+            ollama pull nemotron-3-nano:4b
+            
+            echo "Model pulled successfully!"
