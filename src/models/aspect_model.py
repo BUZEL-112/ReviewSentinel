@@ -70,8 +70,6 @@ class AspectModel:
             logger.info(f"Loading SetFit backbone: {self.model_name}")
             self.model = SetFitModel.from_pretrained(
                 self.model_name,
-                id2label=self.id2label,
-                label2id=self.label2id,
             )
 
             training_args = TrainingArguments(
@@ -82,7 +80,7 @@ class AspectModel:
 
             trainer = SetFitTrainer(
                 model=self.model,
-                args=training_args,
+                batch_size=batch_size, num_epochs=num_epochs,
                 train_dataset=train_dataset,
                 eval_dataset=eval_dataset,
                 metric="accuracy",
@@ -113,9 +111,17 @@ class AspectModel:
     def load(self):
         """Load a previously trained SetFit model from disk."""
         try:
-            if not os.path.exists(self.save_dir):
+            tokenizer = self.model.model_body[0].tokenizer
+            if "token_type_ids" in tokenizer.model_input_names:
+                tokenizer.model_input_names.remove("token_type_ids")
+        except Exception as e:
+            pass
+        try:
+            # Check for the model head, not just the directory
+            head_path = os.path.join(self.save_dir, "model_head.pkl")
+            if not os.path.exists(head_path):
                 raise FileNotFoundError(
-                    f"No saved aspect model found at {self.save_dir}. "
+                    f"No trained aspect model head found at {head_path}. "
                     f"Run train() first."
                 )
             logger.info(f"Loading aspect model from {self.save_dir}")
@@ -138,6 +144,12 @@ class AspectModel:
             >>> model.predict(["arrived two weeks late"])
             [{"aspect": "shipping", "aspect_id": 1}]
         """
+        try:
+            tokenizer = self.model.model_body[0].tokenizer
+            if "token_type_ids" in tokenizer.model_input_names:
+                tokenizer.model_input_names.remove("token_type_ids")
+        except Exception as e:
+            pass
         try:
             if self.model is None:
                 raise RuntimeError(

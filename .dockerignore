@@ -16,15 +16,15 @@ artifacts/
 data/
 
 # Documentation and Ops logic (Containers don't need these)
-docs/
-k8s/
-k3s/
-docker/
-tests/
-scripts/ci/
-README.md
-Makefile
-kind-config.yaml
-kind-config.yaml.template
-!docker/api/entrypoint.sh
-!docker/prefect/entrypoint.sh
+# docs/
+# k8s/
+# k3s/
+# docker/
+# tests/
+# scripts/ci/
+# README.md
+# Makefile
+# kind-config.yaml
+# kind-config.yaml.template
+# !docker/api/entrypoint.sh
+# !docker/prefect/entrypoint.sh

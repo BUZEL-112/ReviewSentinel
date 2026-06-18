@@ -202,6 +202,7 @@ class InferencePipeline:
                 truncation=True,
                 return_tensors="pt",
             )
+            encodings.pop("token_type_ids", None)
             # Send tensors to the active device
             encodings = {k: v.to(self.device) for k, v in encodings.items()}
 

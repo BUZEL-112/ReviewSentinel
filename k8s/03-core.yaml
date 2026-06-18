@@ -67,6 +67,16 @@ spec:
       containers:
       - name: prefect-server
         image: ghcr.io/buzel-112/reviewsentinel-prefect-server:latest
+        env:
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: reviewsentinel-secrets
+              key: PREFECT_DB_PASSWORD
+        - name: PREFECT_API_DATABASE_CONNECTION_URL
+          value: "postgresql+asyncpg://prefect:$(POSTGRES_PASSWORD)@prefect-postgres:5432/prefect"
+        - name: PREFECT_API_DATABASE_CONNECTION_TIMEOUT
+          value: "20.0"
         command: ["/bin/sh", "-c"]
         args: ["prefect server start --host 0.0.0.0"]
         ports:
@@ -89,8 +99,7 @@ spec:
   ports:
     - port: 4200
       targetPort: 4200
----
-# PREFECT WORKER (No Service Needed)
+---# PREFECT WORKER (No Service Needed)
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -104,9 +113,29 @@ spec:
       labels:
         app: prefect-worker
     spec:
+      initContainers:
+      - name: wait-for-work-pool
+        image: ghcr.io/buzel-112/reviewsentinel-prefect-worker:latest
+        imagePullPolicy: Always
+        envFrom:
+        - configMapRef:
+            name: reviewsentinel-configs
+        env:
+        - name: PREFECT_API_URL
+          value: "http://prefect-server:4200/api"
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            echo "Waiting for prefect-server API and work pool initialization..."
+            until prefect work-pool inspect default-agent-pool > /dev/null 2>&1; do
+              echo "Work pool 'default-agent-pool' not ready. Sleeping 5s..."
+              sleep 5
+            done
+            echo "Work pool is successfully verified!"
       containers:
       - name: prefect-worker
         image: ghcr.io/buzel-112/reviewsentinel-prefect-worker:latest
+        imagePullPolicy: Always
         envFrom:
         - configMapRef:
             name: reviewsentinel-configs
@@ -125,23 +154,6 @@ spec:
               key: MINIO_ROOT_PASSWORD
         command: ["/bin/sh", "-c"]
         args: ["prefect worker start --pool default-agent-pool"]
-        volumeMounts:
-        - name: host-data
-          mountPath: /app/data
-        - name: host-artifacts
-          mountPath: /app/artifacts
-        - name: host-configs
-          mountPath: /app/configs
-      volumes:
-      - name: host-data
-        hostPath:
-          path: /data
-      - name: host-artifacts
-        hostPath:
-          path: /artifacts
-      - name: host-configs
-        hostPath:
-          path: /configs
 
 ---
 apiVersion: batch/v1
@@ -149,14 +161,18 @@ kind: Job
 metadata:
   name: prefect-init
 spec:
-  # If it fails (e.g. server isn't ready yet), K8s will retry it up to 5 times
   backoffLimit: 5
   template:
     spec:
+      initContainers:
+      - name: wait-for-prefect-server
+        image: busybox:1.36
+        command: ['sh', '-c', 'until wget -qO- http://prefect-server:4200/api/health > /dev/null; do echo "Waiting for Prefect Server to boot..."; sleep 3; done; echo "Server is up!"']
       restartPolicy: OnFailure
       containers:
       - name: prefect-deploy
         image: ghcr.io/buzel-112/reviewsentinel-prefect-worker:latest
+        imagePullPolicy: Always
         envFrom:
         - configMapRef:
             name: reviewsentinel-configs
@@ -173,21 +189,51 @@ spec:
             echo "Registering deployments from prefect.yaml..."
             prefect deploy --all;
             echo "Deployments registered successfully!"
-        # We mount the code and configs just like the worker so it can read prefect.yaml
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prefect-postgres
+spec:
+  selector:
+    matchLabels:
+      app: prefect-postgres
+  template:
+    metadata:
+      labels:
+        app: prefect-postgres
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:16-alpine
+        env:
+        - name: POSTGRES_USER
+          value: "prefect"
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: reviewsentinel-secrets
+              key: PREFECT_DB_PASSWORD
+        - name: POSTGRES_DB
+          value: "prefect"
+        ports:
+        - containerPort: 5432
         volumeMounts:
-        - name: host-data
-          mountPath: /app/data
-        - name: host-artifacts
-          mountPath: /app/artifacts
-        - name: host-configs
-          mountPath: /app/configs
+        - name: prefect-postgres-data
+          mountPath: /var/lib/postgresql/data
       volumes:
-      - name: host-data
-        hostPath:
-          path: /data
-      - name: host-artifacts
-        hostPath:
-          path: /artifacts
-      - name: host-configs
-        hostPath:
-          path: /configs
+      - name: prefect-postgres-data
+        persistentVolumeClaim:
+          claimName: prefect-postgres-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prefect-postgres
+spec:
+  selector:
+    app: prefect-postgres
+  ports:
+    - port: 5432
+      targetPort: 5432

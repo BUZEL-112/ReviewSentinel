@@ -83,7 +83,7 @@ curl -X POST http://localhost:8000/predict \
   -H "Content-Type: application/json" \
   -d '{"title": "Broke after one week", "text": "Complete waste of money."}'
 ```
-
+curl http://localhost:30080/api/health
 ---
 
 ## Service URLs (Docker Compose)

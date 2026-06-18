@@ -40,7 +40,14 @@ logs:
 	@kubectl get pods -w
 
 
-
+forward-all:
+	kubectl port-forward svc/prefect-server 4200:4200 &
+	kubectl port-forward svc/mlflow 5000:5000 &
+	kubectl port-forward svc/minio 9001:9001 &
+	kubectl port-forward svc/api 8000:8000 > /dev/null 2>&1 &
+	
+stop-all:
+	pkill -f "kubectl port-forward"
 # .PHONY: tf-vars tf-init tf-plan tf-apply tf-destroy tf-output tf-kubeconfig install-kubectl install-helm k8s-setup k8s-deploy k8s-status k8s-logs k8s-shell k8s-secrets
 
 # # Auto-resolve KUBECONFIG — use env var if already set, else default to project root kubeconfig.

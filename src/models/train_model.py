@@ -99,6 +99,12 @@ class ModelTrainer:
             train_cfg = self.config.get("distilbert_model", {}).get("training", {})
 
             
+            # `eval_strategy` was added as an alias in transformers >= 4.41.
+            # Fall back to the older `evaluation_strategy` for compatibility.
+            import transformers as _transformers
+            _tf_version = tuple(int(x) for x in _transformers.__version__.split(".")[:2])
+            _eval_strategy_key = "eval_strategy" if _tf_version >= (4, 41) else "evaluation_strategy"
+
             training_args = TrainingArguments(
                 output_dir=train_cfg.get("output_dir", "./results"),
                 num_train_epochs=train_cfg.get("epochs", 3),
@@ -109,7 +115,7 @@ class ModelTrainer:
                 logging_dir=train_cfg.get("logging_dir", "./logs"),
                 logging_steps=train_cfg.get("logging_steps", 10),
                 save_steps=train_cfg.get("save_steps", 50),
-                eval_strategy="epoch",  # evaluate at end of each epoch
+                **{_eval_strategy_key: "epoch"},  # evaluate at end of each epoch
                 report_to=["mlflow"],         # explicitly enable MLflow tracking
             )
 

@@ -290,8 +290,10 @@ known_hosts.old
 /root/.ssh/known_hosts.old
 
 
-colabtest.ipynbkind-config.yaml
+colabtest.ipynb
+kind-config.yaml
 get-docker.sh
 kubectl
 
 
+scripts/hotpatch.sh

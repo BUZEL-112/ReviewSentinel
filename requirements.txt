@@ -1,6 +1,7 @@
 # ── Core ML / NLP ────────────────────────────────────────────────────────────
 transformers==4.39.3
 torch>=2.2.0
+accelerate>=0.21.0,<0.26.0
 datasets>=2.19.0
 sentence-transformers==2.7.0
 setfit==1.0.3

@@ -10,7 +10,7 @@ from src.data.load_data import LoadData
 from src.data.clean_data import CleanDataBERT
 from src.models.train_model import ModelTrainer
 from src.models.aspect_model import AspectModel
-from src.data.aspect_data import prepare_aspect_data
+from src.data.aspect_data import build_setfit_dataset
 from src.models.evaluate_model import ModelEvaluator
 from src.orchestration.validation import DataValidator
 from src.utils.logger import logger
@@ -98,7 +98,7 @@ def train_aspect_model_task(df, config_path: str):
 
     logger.info("Preparing data for Aspect-Based Sentiment Analysis.")
     # 2. Transform the raw dataframe into SetFit-compatible aspect pairs
-    train_dataset = prepare_aspect_data(df)
+    train_dataset = build_setfit_dataset()
     
     # 3. Initialize and Train
     logger.info(f"Initializing SetFit AspectModel. Training for {epochs} epochs.")

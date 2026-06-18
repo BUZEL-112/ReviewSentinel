@@ -6,6 +6,7 @@ type: Opaque
 stringData: # stringData allows plain text (Kubernetes will encode it automatically)
   MINIO_ROOT_USER: "reviewsentinel"          # Update with your .env value
   MINIO_ROOT_PASSWORD: "changeme123"   # Update with your .env value
+  PREFECT_DB_PASSWORD: "securepostgrespassword"
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -41,6 +42,17 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: prefect-data-pvc
+spec:
+  accessModes: [ "ReadWriteOnce" ]
+  resources:
+    requests:
+      storage: 1Gi
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: prefect-postgres-pvc
 spec:
   accessModes: [ "ReadWriteOnce" ]
   resources:
