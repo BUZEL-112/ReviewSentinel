@@ -19,6 +19,7 @@ deployments:
   tags: []
   description: Weekly retraining pipeline for ReviewSentinel
   entrypoint: src/orchestration/flows.py:training_flow
+  concurrency_limit: 1
   parameters: {}
   work_pool:
     name: default-agent-pool

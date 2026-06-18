@@ -1,9 +1,10 @@
 # ── Core ML / NLP ────────────────────────────────────────────────────────────
-transformers>=4.40.0
+transformers==4.39.3
 torch>=2.2.0
 datasets>=2.19.0
-sentence-transformers>=3.0.0
-setfit>=1.0.0
+sentence-transformers==2.7.0
+setfit==1.0.3
+huggingface_hub==0.22.2
 
 # ── Retrieval / Vector Search ────────────────────────────────────────────────
 faiss-cpu>=1.7.4

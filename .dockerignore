@@ -1,0 +1,30 @@
+# Git and environment
+.git/
+.gitignore
+.env
+.env.*
+
+# Python caching
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+
+# Heavy Machine Learning Data (NEVER copy these into the image)
+artifacts/
+data/
+
+# Documentation and Ops logic (Containers don't need these)
+docs/
+k8s/
+k3s/
+docker/
+tests/
+scripts/ci/
+README.md
+Makefile
+kind-config.yaml
+kind-config.yaml.template
+!docker/api/entrypoint.sh
+!docker/prefect/entrypoint.sh

@@ -9,6 +9,8 @@ from prefect.exceptions import Abort
 from src.data.load_data import LoadData
 from src.data.clean_data import CleanDataBERT
 from src.models.train_model import ModelTrainer
+from src.models.aspect_model import AspectModel
+from src.data.aspect_data import prepare_aspect_data
 from src.models.evaluate_model import ModelEvaluator
 from src.orchestration.validation import DataValidator
 from src.utils.logger import logger
@@ -82,6 +84,64 @@ def train_model_task(df: pd.DataFrame, config_path: str):
     trainer = ModelTrainer(dataframe=df, yaml_config_path=config_path, target_column=target_column)
     model = trainer.train_model(model_type)
     return model, trainer
+
+@task(name="Train Aspect Model", description="Trains the SetFit aspect classification model", log_prints=True)
+def train_aspect_model_task(df, config_path: str):
+    logger = get_run_logger()
+    
+    # 1. Parse configuration
+    with open(config_path, "r") as file:
+        config = yaml.safe_load(file)
+    
+    aspect_config = config.get("aspect_model", {})
+    epochs = aspect_config.get("epochs", 1)
+
+    logger.info("Preparing data for Aspect-Based Sentiment Analysis.")
+    # 2. Transform the raw dataframe into SetFit-compatible aspect pairs
+    train_dataset = prepare_aspect_data(df)
+    
+    # 3. Initialize and Train
+    logger.info(f"Initializing SetFit AspectModel. Training for {epochs} epochs.")
+    model = AspectModel()
+    
+    # Track with MLflow
+    with mlflow.start_run(nested=True, run_name="aspect_model_training"):
+        mlflow.log_params({"epochs": epochs, "model_type": "setfit"})
+        
+        # Execute training
+        metrics = model.train(train_dataset, num_epochs=epochs)
+        
+        # Log resulting metrics
+        mlflow.log_metrics(metrics)
+        logger.info(f"Aspect Model Training Complete. Metrics: {metrics}")
+
+    return model, metrics
+
+@task(name="Deploy Aspect Model", description="Saves the trained aspect model to the persistent volume", log_prints=True)
+def deploy_aspect_model_task(model, config_path: str):
+    logger = get_run_logger()
+    
+    # 1. Get the target directory from the central config
+    with open(config_path, "r") as file:
+        config = yaml.safe_load(file)
+        
+    model_dir = config.get("aspect_model", {}).get("model_dir", "artifacts/models/aspect_model")
+    
+    logger.info(f"Saving trained Aspect Model to persistent volume at: {model_dir}")
+    
+    # 2. Save the model to the local mounted path
+    model.save(model_dir)
+    
+    # 3. Optional: Sync to MinIO artifact bucket
+    try:
+        from src.utils.utils import upload_directory_to_minio
+        upload_directory_to_minio(local_dir=model_dir, bucket="reviewsentinel-artifacts", s3_prefix="models/aspect_model")
+        logger.info("Successfully synced Aspect Model to MinIO.")
+    except ImportError:
+        logger.info("MinIO utility not found; model is saved locally to the persistent volume.")
+        
+    logger.info("Aspect Model deployment successful.")
+
 
 @task(name="Evaluate Model", retries=1, retry_delay_seconds=60, cache_policy=NO_CACHE, tags=["model", "evaluation"])
 def evaluate_model_task(trainer, config_path: str):
@@ -194,6 +254,9 @@ from src.orchestration.search_tasks import rebuild_search_index_task
 def training_flow(config_path: str = "configs/pipeline_params.yaml"):
     logger.info(f"Starting Prefect training flow with config: {config_path}")
     setup_minio_bucket()
+    with open(config_path, "r") as file:
+        config = yaml.safe_load(file)
+    aspect_enabled = config.get("aspect_model", {}).get("enabled", False)
     # 1. Load Data
     df = load_data_task(config_path)
     
@@ -208,6 +271,25 @@ def training_flow(config_path: str = "configs/pipeline_params.yaml"):
     
     # 5. Evaluate Model
     metrics = evaluate_model_task(trainer, config_path)
+    # --- THE CONDITIONAL ASPECT MODEL ROUTER ---
+    if aspect_enabled:
+        logger.info("Aspect model is ENABLED in config. Initiating aspect training phase.")
+        
+        # 1. Train the aspect model
+        aspect_model, aspect_metrics = train_aspect_model_task(df, config_path)
+        
+        # 2. Use your existing quality gate to decide if it's good enough to deploy
+        aspect_should_deploy = quality_gate_task(aspect_metrics, config_path)
+        
+        # 3. Deploy it
+        if aspect_should_deploy:
+            deploy_aspect_model_task(aspect_model, config_path)
+        else:
+            logger.warning("Aspect model failed quality gate. Deployment aborted.")
+            
+        logger.info("Aspect model phase complete.")
+    else:
+        logger.info("Aspect model is DISABLED in config. Skipping aspect training.")
     
     # 6. Quality Gate
     should_deploy = quality_gate_task(metrics, config_path)

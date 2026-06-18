@@ -166,6 +166,7 @@ spec:
         command: ["/bin/sh", "-c"]
         args: 
           - |
+            set -e;
             echo "Waiting for Prefect Server to initialize..."
             sleep 15;
             prefect work-pool create default-agent-pool --type process || true;
