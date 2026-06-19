@@ -298,3 +298,9 @@ kubectl
 
 scripts/hotpatch.sh
 worker_logs.txt
+# Load test experimentation artifacts
+tests/experimentation/test_data.json
+tests/experimentation/results/
+tests/experimentation/.venv/
+
+test_results.zip
