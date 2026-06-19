@@ -175,4 +175,9 @@ semantic_search:
 
   build:
     rebuild_on_deploy: true
-    max_index_rows: 50000
+    max_index_rows: 5000
+  
+aspect_model:
+  enabled: true
+  epochs: 1
+  model_dir: "artifacts/models/aspect_model"

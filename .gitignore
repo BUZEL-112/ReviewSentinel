@@ -297,3 +297,4 @@ kubectl
 
 
 scripts/hotpatch.sh
+worker_logs.txt

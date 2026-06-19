@@ -14,7 +14,6 @@ from src.data.aspect_data import build_setfit_dataset
 from src.models.evaluate_model import ModelEvaluator
 from src.orchestration.validation import DataValidator
 from src.utils.logger import logger
-from prefect.cache_policies import NO_CACHE
 from prefect import task, flow
 
 import boto3
@@ -72,7 +71,7 @@ def clean_data_task(df: pd.DataFrame):
     # Returns (train_dataset, val_dataset, test_dataset, test_labels)
     return cleaner.prepare_datasets(df)
 
-@task(name="Train Model", retries=1, retry_delay_seconds=300, cache_policy=NO_CACHE, tags=["model", "training"])
+@task(name="Train Model", retries=1, retry_delay_seconds=300, tags=["model", "training"])
 def train_model_task(df: pd.DataFrame, config_path: str):
     with open(config_path, "r") as f:
         pipeline_cfg = yaml.safe_load(f).get("training_pipeline", {})
@@ -87,8 +86,6 @@ def train_model_task(df: pd.DataFrame, config_path: str):
 
 @task(name="Train Aspect Model", description="Trains the SetFit aspect classification model", log_prints=True)
 def train_aspect_model_task(df, config_path: str):
-    logger = get_run_logger()
-    
     # 1. Parse configuration
     with open(config_path, "r") as file:
         config = yaml.safe_load(file)
@@ -96,11 +93,7 @@ def train_aspect_model_task(df, config_path: str):
     aspect_config = config.get("aspect_model", {})
     epochs = aspect_config.get("epochs", 1)
 
-    logger.info("Preparing data for Aspect-Based Sentiment Analysis.")
-    # 2. Transform the raw dataframe into SetFit-compatible aspect pairs
-    train_dataset = build_setfit_dataset()
-    
-    # 3. Initialize and Train
+    # 2. Initialize and Train
     logger.info(f"Initializing SetFit AspectModel. Training for {epochs} epochs.")
     model = AspectModel()
     
@@ -109,7 +102,7 @@ def train_aspect_model_task(df, config_path: str):
         mlflow.log_params({"epochs": epochs, "model_type": "setfit"})
         
         # Execute training
-        metrics = model.train(train_dataset, num_epochs=epochs)
+        metrics = model.train(num_epochs=epochs)
         
         # Log resulting metrics
         mlflow.log_metrics(metrics)
@@ -119,8 +112,6 @@ def train_aspect_model_task(df, config_path: str):
 
 @task(name="Deploy Aspect Model", description="Saves the trained aspect model to the persistent volume", log_prints=True)
 def deploy_aspect_model_task(model, config_path: str):
-    logger = get_run_logger()
-    
     # 1. Get the target directory from the central config
     with open(config_path, "r") as file:
         config = yaml.safe_load(file)
@@ -143,7 +134,7 @@ def deploy_aspect_model_task(model, config_path: str):
     logger.info("Aspect Model deployment successful.")
 
 
-@task(name="Evaluate Model", retries=1, retry_delay_seconds=60, cache_policy=NO_CACHE, tags=["model", "evaluation"])
+@task(name="Evaluate Model", retries=1, retry_delay_seconds=60, tags=["model", "evaluation"])
 def evaluate_model_task(trainer, config_path: str):
     with open(config_path, "r") as f:
         pipeline_cfg = yaml.safe_load(f).get("training_pipeline", {})
@@ -199,7 +190,7 @@ def quality_gate_task(metrics: dict, config_path: str) -> bool:
     return False
 
 
-@task(name="Deploy Model", retries=2, retry_delay_seconds=30, cache_policy=NO_CACHE, tags=["model", "deployment"])
+@task(name="Deploy Model", retries=2, retry_delay_seconds=30, tags=["model", "deployment"])
 def deploy_model_task(model, trainer, config_path: str):
     logger.info("Deploying model (Tagging in MLflow as production)")
     

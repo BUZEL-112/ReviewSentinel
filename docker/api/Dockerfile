@@ -1,17 +1,24 @@
-# Use a multi-stage build to keep the final image clean
-FROM python:3.10-slim AS builder
+# Use official PyTorch image as base to avoid compiling heavy ML packages
+FROM pytorch/pytorch:2.2.2-cuda12.1-cudnn8-runtime
 
-WORKDIR /build
-COPY requirements.txt .
-RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
-RUN pip install --no-cache-dir --prefix=/install boto3
-
-FROM python:3.10-slim
+# 1. Set Timezone explicitly to prevent Pendulum/Prefect crashes
+ENV TZ=UTC
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 WORKDIR /app
-COPY --from=builder /install /usr/local
+
+# 2. Add tzdata to your apt-get install
+RUN apt-get update && apt-get install -y --no-install-recommends curl tzdata && rm -rf /var/lib/apt/lists/*
+
+# Copy the custom API requirements
+COPY docker/api/requirements.txt .
+
+# Install dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy the application code
 COPY . .
-RUN apt-get update && apt-get install -y curl
+
 # Copy and set permissions for entrypoint
 COPY docker/api/entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh

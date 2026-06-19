@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
         - name: prefect-server
-          image: prefecthq/prefect:2.19.4-python3.11
+          image: prefecthq/prefect:2-python3.10
           
           command:
             - prefect

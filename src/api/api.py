@@ -255,7 +255,7 @@ class SinglePredictionRequest(BaseModel):
 
 class BatchPredictionRequest(BaseModel):
     items: List[SinglePredictionRequest] = Field(
-        ..., min_length=1, description="List of title/text pairs to classify."
+        ..., description="List of title/text pairs to classify."
     )
 
 

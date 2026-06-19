@@ -5,7 +5,7 @@ from prefect.deployments import run_deployment
 from src.utils.logger import logger 
 
 @task(retries=2, retry_delay_seconds=5)
-def check_api_health(api_url: str = "http://reviewsentinel-api:8000/health") -> bool:
+def check_api_health(api_url: str = "http://api:8000/health") -> bool:
     try:
         response = httpx.get(api_url, timeout=5.0)
         response.raise_for_status()

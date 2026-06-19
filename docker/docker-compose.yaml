@@ -71,9 +71,7 @@ services:
       retries: 5
 
   prefect-server:
-    build:
-      context: ../
-      dockerfile: docker/prefect/Dockerfile
+    image: prefecthq/prefect:2-python3.10
     container_name: prefect-server
     networks:
       - reviewsentinel-net
@@ -84,9 +82,9 @@ services:
       - "4200:4200"
     volumes:
       - prefect_data:/root/.prefect
-    command: ["server"]
+    command: ["prefect", "server", "start", "--host", "0.0.0.0"]
     healthcheck:
-      test: ["CMD", "curl", "-s", "http://localhost:4200/api/health"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:4200/api/health')"]
       interval: 10s
       timeout: 5s
       retries: 5

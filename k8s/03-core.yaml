@@ -66,7 +66,7 @@ spec:
     spec:
       containers:
       - name: prefect-server
-        image: ghcr.io/buzel-112/reviewsentinel-prefect-server:latest
+        image: prefecthq/prefect:2-python3.10
         env:
         - name: POSTGRES_PASSWORD
           valueFrom:
@@ -77,10 +77,35 @@ spec:
           value: "postgresql+asyncpg://prefect:$(POSTGRES_PASSWORD)@prefect-postgres:5432/prefect"
         - name: PREFECT_API_DATABASE_CONNECTION_TIMEOUT
           value: "20.0"
-        command: ["/bin/sh", "-c"]
-        args: ["prefect server start --host 0.0.0.0"]
+        - name: PREFECT_SERVER_API_HOST
+          value: "0.0.0.0"
+        - name: PREFECT_API_URL
+          value: "http://prefect-server:4200/api"
+        # In K8s, 'args' appends to the image's built-in ENTRYPOINT ["prefect"]
+        args: ["prefect", "server", "start", "--host", "0.0.0.0"]
         ports:
         - containerPort: 4200
+        
+        # Native Kubernetes Liveness Probe
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: 4200
+          initialDelaySeconds: 15
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 5
+          
+        # Native Kubernetes Readiness Probe
+        readinessProbe:
+          httpGet:
+            path: /api/health
+            port: 4200
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+          
         volumeMounts:
         - name: prefect-data
           mountPath: /root/.prefect
@@ -99,7 +124,8 @@ spec:
   ports:
     - port: 4200
       targetPort: 4200
----# PREFECT WORKER (No Service Needed)
+---
+# PREFECT WORKER (No Service Needed)
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -154,6 +180,23 @@ spec:
               key: MINIO_ROOT_PASSWORD
         command: ["/bin/sh", "-c"]
         args: ["prefect worker start --pool default-agent-pool"]
+        volumeMounts:
+        - name: host-data
+          mountPath: /app/data
+        - name: host-artifacts
+          mountPath: /app/artifacts
+        - name: host-configs
+          mountPath: /app/configs
+      volumes:
+      - name: host-data
+        hostPath:
+          path: /data
+      - name: host-artifacts
+        hostPath:
+          path: /artifacts
+      - name: host-configs
+        hostPath:
+          path: /configs
 
 ---
 apiVersion: batch/v1

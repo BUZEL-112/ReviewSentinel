@@ -99,9 +99,11 @@ class AspectModel:
             logger.error(f"Aspect model training failed: {e}")
             raise CustomException(e)
 
-    def save(self):
+    def save(self, save_dir: str = None):
         """Save the trained SetFit model to disk."""
         try:
+            if save_dir:
+                self.save_dir = save_dir
             os.makedirs(self.save_dir, exist_ok=True)
             self.model.save_pretrained(self.save_dir)
             logger.info(f"Aspect model saved to {self.save_dir}")
