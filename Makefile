@@ -13,6 +13,9 @@ help:
 	@echo "  make clean   - Remove generated configuration files"
 	@echo "  make apply   - Apply Kubernetes manifests (k8s/)"
 	@echo "  make logs    - Watch the status of all pods"
+	@echo "  make restart - Restart the application without recreating the cluster"
+	@echo "  make forward-all - Port-forward all services"
+	@echo "  make stop-all - Stop port-forwarding"
 
 config:
 	@echo "📂 Generating cluster config for path: $(PROJECT_ROOT)"
@@ -39,7 +42,25 @@ apply:
 logs:
 	@kubectl get pods -w
 
-
+restart:  
+	@echo "♻️  Restarting workloads (cluster + cached images kept)..."  
+	@echo "🗑️  Deleting existing manifests..."  
+	@kubectl delete -f k8s/ --ignore-not-found=true  
+	@echo "⏳ Waiting for pods to terminate..."  
+	@kubectl wait --for=delete pod --all --timeout=120s 2>/dev/null || true  
+	@echo "🚀 Re-applying manifests..."  
+	@kubectl apply -f k8s/  
+	@echo "🎉 Restart complete! Run 'make logs' to watch the startup."
+	
+restart-prefect:  
+	@echo "♻️  Restarting Prefect stack only..."  
+	@kubectl rollout restart deployment prefect-postgres  
+	@kubectl rollout status deployment prefect-postgres --timeout=120s  
+	@kubectl rollout restart deployment prefect-server  
+	@kubectl rollout status deployment prefect-server --timeout=180s  
+	@kubectl rollout restart deployment prefect-worker  
+	@echo "🎉 Prefect stack restarted in order."
+	
 forward-all:
 	kubectl port-forward svc/prefect-server 4200:4200 &
 	kubectl port-forward svc/mlflow 5000:5000 &

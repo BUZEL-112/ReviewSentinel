@@ -91,7 +91,7 @@ docker-compose -f docker/docker-compose.yaml up --build -d
 
 # Confirm the API is live
 curl http://localhost:8000/health
-
+curl http://localhost:30080/api/health
 # Run a prediction
 curl -X POST http://localhost:8000/predict \
   -H "Content-Type: application/json" \

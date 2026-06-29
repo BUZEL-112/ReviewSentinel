@@ -33,7 +33,7 @@ distilbert_model:
 # Aspect Model (SetFit) — Few-Shot Aspect Classification
 # --------------------------------------------------
 aspect_model:
-  backbone: "sentence-transformers/paraphrase-mpnet-base-v2"
+  backbone:  "sentence-transformers/all-MiniLM-L6-v2"
   save_dir: "artifacts/models/aspect_model"
   training:
     num_epochs: 1

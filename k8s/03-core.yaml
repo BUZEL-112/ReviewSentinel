@@ -85,7 +85,13 @@ spec:
         args: ["prefect", "server", "start", "--host", "0.0.0.0"]
         ports:
         - containerPort: 4200
-        
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "200m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
         # Native Kubernetes Liveness Probe
         livenessProbe:
           httpGet:
@@ -165,6 +171,13 @@ spec:
         envFrom:
         - configMapRef:
             name: reviewsentinel-configs
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "500m"
+          limits:
+            memory: "8Gi"
+            cpu: "1000m"
         env:
         - name: PREFECT_API_URL
           value: "http://prefect-server:4200/api"
@@ -187,6 +200,8 @@ spec:
           mountPath: /app/artifacts
         - name: host-configs
           mountPath: /app/configs
+        - name: host-src
+          mountPath: /app/src
       volumes:
       - name: host-data
         hostPath:
@@ -197,6 +212,9 @@ spec:
       - name: host-configs
         hostPath:
           path: /configs
+      - name: host-src
+        hostPath:
+          path: /src
 
 ---
 apiVersion: batch/v1
@@ -262,6 +280,13 @@ spec:
           value: "prefect"
         ports:
         - containerPort: 5432
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "200m"
+          limits:
+            memory: "512Mi"
+            cpu: "1000m"
         volumeMounts:
         - name: prefect-postgres-data
           mountPath: /var/lib/postgresql/data

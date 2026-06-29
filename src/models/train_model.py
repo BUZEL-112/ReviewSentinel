@@ -27,7 +27,7 @@ class ModelTrainer:
 
     def __init__(self, dataframe, yaml_config_path, target_column="label"):
         # self.df = dataframe.copy()
-        self.df = dataframe.sample(frac=0.001).copy()
+        self.df = dataframe.copy() 
         self.target_column = target_column
 
         if not os.path.exists(yaml_config_path):

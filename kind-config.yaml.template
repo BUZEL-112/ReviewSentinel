@@ -10,6 +10,8 @@ nodes:
     containerPath: /artifacts
   - hostPath: ${PROJECT_ROOT}/configs
     containerPath: /configs
+  - hostPath: ${PROJECT_ROOT}/src  
+    containerPath: /src
   # 2. Map the node port to the Codespace host
   extraPortMappings:
   - containerPort: 30080

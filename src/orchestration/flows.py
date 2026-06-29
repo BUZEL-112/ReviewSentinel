@@ -250,7 +250,7 @@ def training_flow(config_path: str = "configs/pipeline_params.yaml"):
     aspect_enabled = config.get("aspect_model", {}).get("enabled", False)
     # 1. Load Data
     df = load_data_task(config_path)
-    
+    df = df.sample(frac=0.001).copy()   
     # 2. Validate Data
     validate_data_task(df, config_path)
     

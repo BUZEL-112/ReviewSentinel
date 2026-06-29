@@ -4,12 +4,14 @@ nodes:
 - role: control-plane
   # 1. Mount your host filesystem into the kind node
   extraMounts:
-  - hostPath: /root/ReviewSentinel/data
+  - hostPath: /teamspace/studios/this_studio/ReviewSentinel/data
     containerPath: /data
-  - hostPath: /root/ReviewSentinel/artifacts
+  - hostPath: /teamspace/studios/this_studio/ReviewSentinel/artifacts
     containerPath: /artifacts
-  - hostPath: /root/ReviewSentinel/configs
+  - hostPath: /teamspace/studios/this_studio/ReviewSentinel/configs
     containerPath: /configs
+  - hostPath: /teamspace/studios/this_studio/ReviewSentinel/src  
+    containerPath: /src
   # 2. Map the node port to the Codespace host
   extraPortMappings:
   - containerPort: 30080

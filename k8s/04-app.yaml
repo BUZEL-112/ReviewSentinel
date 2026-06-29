@@ -31,6 +31,18 @@ spec:
               key: MINIO_ROOT_PASSWORD
         ports:
         - containerPort: 8000
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 15
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 10
         volumeMounts:
         - name: host-artifacts
           mountPath: /app/artifacts

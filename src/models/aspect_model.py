@@ -31,7 +31,7 @@ class AspectModel:
 
     def __init__(
         self,
-        model_name: str = "sentence-transformers/paraphrase-mpnet-base-v2",
+        model_name: str = "sentence-transformers/all-MiniLM-L6-v2",
         save_dir: str = "artifacts/models/aspect_model",
     ):
         """
@@ -78,12 +78,21 @@ class AspectModel:
                 logging_steps=5,
             )
 
-            trainer = SetFitTrainer(
-                model=self.model,
-                batch_size=batch_size, num_epochs=num_epochs,
-                train_dataset=train_dataset,
-                eval_dataset=eval_dataset,
-                metric="accuracy",
+            # trainer = SetFitTrainer(
+            #     model=self.model,
+            #     batch_size=batch_size, num_epochs=num_epochs,
+            #     train_dataset=train_dataset,
+            #     eval_dataset=eval_dataset,
+            #     metric="accuracy",
+            # )
+            trainer = SetFitTrainer(  
+                model=self.model,  
+                train_dataset=train_dataset,  
+                eval_dataset=eval_dataset,  
+                metric="accuracy",  
+                num_epochs=num_epochs,  
+                batch_size=batch_size,  
+                num_iterations=5,   # was defaulting to 20 → ~4x fewer pairs/steps  
             )
 
             logger.info("Starting SetFit training...")
@@ -176,4 +185,4 @@ class AspectModel:
 
         except Exception as e:
             logger.error(f"Aspect prediction failed: {e}")
-            raise CustomException(e)
+            raise CustomException(e)# sync-check-12345
