@@ -11,7 +11,7 @@ ReviewSentinel models are trained via a Prefect flow defined in `src/orchestrati
 ### Development Mode (The `frac=0.001` Footgun)
 
 > [!WARNING]
-> By default, `ModelTrainer.__init__()` in [`src/models/train_model.py`](../../src/models/train_model.py) contains the following line:
+> By default, `ModelTrainer.__init__()` in [`src/models/train_model.py`](https://github.com/BUZEL-112/ReviewSentinel/blob/main/src/models/train_model.py) contains the following line:
 > ```python
 > self.df = dataframe.sample(frac=0.001).copy()
 > ```
@@ -50,7 +50,7 @@ If you need to force a model into production regardless of its metrics (e.g., to
 
 ## 3. Modifying Hyperparameters
 
-All ML hyperparameters are centralized in [`configs/config.yaml`](../../configs/config.yaml).
+All ML hyperparameters are centralized in [`configs/config.yaml`](https://github.com/BUZEL-112/ReviewSentinel/blob/main/configs/config.yaml).
 
 **Key parameters to tune:**
 - `distilbert_model.training.epochs`: Default is 1 for speed. Increase to 3–5 for production runs.

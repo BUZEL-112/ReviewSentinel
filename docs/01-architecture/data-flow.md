@@ -45,7 +45,7 @@ Compare new F1 vs. MLflow production baseline
 
 **Source:** `configs/config.yaml` → `data_ingestion.source_url`  
 **Output:** `data/raw/dataset.csv`  
-**Code:** [`src/data/load_data.py`](../../src/data/load_data.py)
+**Code:** [`src/data/load_data.py`](https://github.com/BUZEL-112/ReviewSentinel/blob/main/src/data/load_data.py)
 
 `LoadData.load_data()` streams the JSONL.gz file from the UCSD McAuley Lab dataset server using `requests` with streaming enabled. The raw JSONL is parsed line-by-line. Each review is a JSON object with fields including `rating`, `title`, `text`, `verified_purchase`, and timestamp metadata.
 
@@ -58,7 +58,7 @@ Only `rating`, `title`, and `text` are retained for downstream use. The raw CSV 
 ## Stage 2 — Data Validation (`DataValidator`)
 
 **Input:** Raw DataFrame  
-**Code:** [`src/orchestration/validation.py`](../../src/orchestration/validation.py)  
+**Code:** [`src/orchestration/validation.py`](https://github.com/BUZEL-112/ReviewSentinel/blob/main/src/orchestration/validation.py)  
 **Config:** `configs/pipeline_params.yaml` → `orchestration.validation`
 
 Before any preprocessing, the pipeline runs a validation suite. If validation fails, a Prefect `Abort` is raised and the pipeline halts — no model is trained on corrupted data.
@@ -78,7 +78,7 @@ Before any preprocessing, the pipeline runs a validation suite. If validation fa
 
 **Input:** Validated raw DataFrame  
 **Output:** HuggingFace `Dataset` objects (train, val, test) + test labels array  
-**Code:** [`src/data/clean_data.py`](../../src/data/clean_data.py)  
+**Code:** [`src/data/clean_data.py`](https://github.com/BUZEL-112/ReviewSentinel/blob/main/src/data/clean_data.py)  
 **Config:** `configs/config.yaml` → `clean_data_bert`
 
 ### 3a — Label Mapping
@@ -93,7 +93,7 @@ The title and body text fields are each independently cleaned with:
 1. URL removal: `re.sub(r"http\S+|www\S+", "", text)`
 2. Whitespace collapse: `re.sub(r"\s+", " ", text).strip()`
 
-No lowercasing, no punctuation removal, no stemming. See [Data Card](../ml/data-card.md) for the rationale.
+No lowercasing, no punctuation removal, no stemming. See [Data Card](../03-ml-model/data-card.md) for the rationale.
 
 ### 3c — Concatenation
 `"{title} {body_text}"` — a single space joins the two fields. Empty body text becomes an empty string.
@@ -107,7 +107,7 @@ tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
 Reviews longer than 128 tokens are **truncated** at 128. This is the `max_len` used during training.
 
 > [!WARNING]
-> **max_len discrepancy:** Inference uses `max_len=512` (set in `pipeline_params.yaml` → `inference_pipeline.max_len`). Training used `max_len=128`. Reviews between 128 and 512 tokens will be processed at inference time with tokens 129–512 that the model never saw during training. The model may not utilise this extra context effectively. See [Data Card](../ml/data-card.md) for the documented trade-off.
+> **max_len discrepancy:** Inference uses `max_len=512` (set in `pipeline_params.yaml` → `inference_pipeline.max_len`). Training used `max_len=128`. Reviews between 128 and 512 tokens will be processed at inference time with tokens 129–512 that the model never saw during training. The model may not utilise this extra context effectively. See [Data Card](../03-ml-model/data-card.md) for the documented trade-off.
 
 ### 3e — Train / Val / Test Split
 - Stratified by label to maintain class proportions
@@ -122,10 +122,10 @@ The split DataFrames are converted to HuggingFace `Dataset` objects and returned
 
 **Input:** HuggingFace Dataset objects  
 **Output:** Model weights at `artifacts/models/distilbert/`, MLflow run  
-**Code:** [`src/models/train_model.py`](../../src/models/train_model.py)
+**Code:** [`src/models/train_model.py`](https://github.com/BUZEL-112/ReviewSentinel/blob/main/src/models/train_model.py)
 
 > [!CAUTION]
-> `ModelTrainer.__init__()` contains `self.df = dataframe.sample(frac=0.001).copy()` on line 30. This samples **0.1% of the data** for fast development iteration. **Remove or change `frac` before running a real training job.** See [Training Guide](training-guide.md).
+> `ModelTrainer.__init__()` contains `self.df = dataframe.sample(frac=0.001).copy()` on line 30. This samples **0.1% of the data** for fast development iteration. **Remove or change `frac` before running a real training job.** See [Training Guide](../02-guides/training-pipeline.md).
 
 The HuggingFace `Trainer` API handles the training loop, gradient updates, and evaluation. Key hyperparameters from `configs/config.yaml` → `distilbert_model.training`:
 
@@ -146,7 +146,7 @@ MLflow logging is enabled via `report_to=["mlflow"]` in `TrainingArguments`. The
 
 **Input:** Trained `Trainer` object  
 **Output:** `artifacts/evaluation/metrics.json`, metrics dict  
-**Code:** [`src/models/evaluate_model.py`](../../src/models/evaluate_model.py)
+**Code:** [`src/models/evaluate_model.py`](https://github.com/BUZEL-112/ReviewSentinel/blob/main/src/models/evaluate_model.py)
 
 The evaluator runs `trainer.evaluate()` on the held-out test split and computes:
 - Weighted F1 score (used by the quality gate)
@@ -158,7 +158,7 @@ The evaluator runs `trainer.evaluate()` on the held-out test split and computes:
 ## Stage 6 — Quality Gate
 
 **Input:** `metrics` dict from evaluator  
-**Code:** [`src/orchestration/flows.py`](../../src/orchestration/flows.py) — `quality_gate_task()`  
+**Code:** [`src/orchestration/flows.py`](https://github.com/BUZEL-112/ReviewSentinel/blob/main/src/orchestration/flows.py) — `quality_gate_task()`  
 **Config:** `pipeline_params.yaml` → `orchestration.quality_gate`
 
 The gate queries MLflow for the most recent run tagged `is_production=true` and retrieves its F1 score as the baseline. The new model's F1 must exceed the baseline by at least `min_f1_improvement` (default: 0.01 = 1 percentage point) to pass.
@@ -170,7 +170,7 @@ The gate queries MLflow for the most recent run tagged `is_production=true` and 
 ## Stage 7 — Inference (Runtime)
 
 **Trigger:** `POST /predict` or `POST /predict/batch`  
-**Code:** [`src/api/api.py`](../../src/api/api.py), [`src/pipeline/inference_pipeline.py`](../../src/pipeline/inference_pipeline.py)
+**Code:** [`src/api/api.py`](https://github.com/BUZEL-112/ReviewSentinel/blob/main/src/api/api.py), [`src/pipeline/inference_pipeline.py`](https://github.com/BUZEL-112/ReviewSentinel/blob/main/src/pipeline/inference_pipeline.py)
 
 At runtime, every incoming review goes through exactly the same text cleaning as training (URL removal + whitespace collapse + concatenation), but tokenised with `max_len=512`.
 
@@ -194,7 +194,7 @@ The model returns softmax logits → probabilities. The winning class probabilit
 ## Stage 8 — Drift Monitoring
 
 **Trigger:** Prefect schedule — every Monday at 03:00 UTC  
-**Code:** [`src/monitoring/drift_monitor.py`](../../src/monitoring/drift_monitor.py)  
+**Code:** [`src/monitoring/drift_monitor.py`](https://github.com/BUZEL-112/ReviewSentinel/blob/main/src/monitoring/drift_monitor.py)  
 **Config:** `pipeline_params.yaml` → `monitoring`
 
 The monitoring flow reads prediction logs from the last 7 days and compares them against the training reference distribution (saved to `artifacts/monitoring/` at deploy time by `ReferenceStore`). Evidently AI runs statistical tests across:
@@ -214,8 +214,8 @@ The Evidently HTML report is saved to `artifacts/monitoring/reports/` and served
 ## Stage 9 — LLM Judge Processing
 
 **Trigger:** Prefect schedule — every 4 hours  
-**Code:** [`src/llm_judge/judge.py`](../../src/llm_judge/judge.py), [`src/orchestration/judge_tasks.py`](../../src/orchestration/judge_tasks.py)
+**Code:** [`src/llm_judge/judge.py`](https://github.com/BUZEL-112/ReviewSentinel/blob/main/src/llm_judge/judge.py), [`src/orchestration/judge_tasks.py`](https://github.com/BUZEL-112/ReviewSentinel/blob/main/src/orchestration/judge_tasks.py)
 
-The `judge_processing_flow` dequeues up to `batch_size` (default: 50) pending reviews from the SQLite queue. Each review is sent to Ollama with the original prediction and probability distribution in the prompt (see [`src/llm_judge/prompt_builder.py`](../../src/llm_judge/prompt_builder.py)).
+The `judge_processing_flow` dequeues up to `batch_size` (default: 50) pending reviews from the SQLite queue. Each review is sent to Ollama with the original prediction and probability distribution in the prompt (see [`src/llm_judge/prompt_builder.py`](https://github.com/BUZEL-112/ReviewSentinel/blob/main/src/llm_judge/prompt_builder.py)).
 
 The LLM returns a classification and reasoning. If it disagrees with the primary model, the entry is written to `conflicts.db`. Before the next automated retraining, these conflicts are exported and prepended to the training DataFrame, closing the active-learning loop.

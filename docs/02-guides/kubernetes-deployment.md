@@ -2,7 +2,7 @@
 
 This runbook details how to provision a local Kubernetes cluster using Kind (Kubernetes in Docker) and deploy the ReviewSentinel stack to it. This is the recommended environment for testing Kubernetes manifests and CI/CD pipelines locally.
 
-See [ADR 006](../decisions/006-kind-for-local-k8s.md) for why we use Kind instead of Minikube.
+See [ADR 006](../06-decisions/006-kind-for-local-k8s.md) for why we use Kind instead of Minikube.
 
 ---
 

@@ -245,7 +245,8 @@ terraform.rc
 # Environment variable files (contain API keys, passwords, tokens)
 .env
 .env.*
-!.env.example          # only the example template is safe to commit
+# only the example template is safe to commit
+!.env.example
 .envrc
 *.secret
 *.secrets

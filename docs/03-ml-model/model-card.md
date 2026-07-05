@@ -10,9 +10,9 @@
 
 ## Model Description
 
-ReviewSentinel's primary classifier is a fine-tuned instance of `distilbert-base-uncased`, a 66M-parameter distilled version of BERT. It was fine-tuned on labelled Amazon customer reviews (`All_Beauty` category) to predict sentiment as one of three classes. See [ADR 001](../decisions/001-distilbert-over-larger-models.md) for the rationale behind this model choice.
+ReviewSentinel's primary classifier is a fine-tuned instance of `distilbert-base-uncased`, a 66M-parameter distilled version of BERT. It was fine-tuned on labelled Amazon customer reviews (`All_Beauty` category) to predict sentiment as one of three classes. See [ADR 001](../06-decisions/001-distilbert-over-larger-models.md) for the rationale behind this model choice.
 
-The model is loaded by `InferencePipeline` ([src/pipeline/inference_pipeline.py](../../src/pipeline/inference_pipeline.py)) and served via the FastAPI application ([src/api/api.py](../../src/api/api.py)).
+The model is loaded by `InferencePipeline` ([src/pipeline/inference_pipeline.py](https://github.com/BUZEL-112/ReviewSentinel/blob/main/src/pipeline/inference_pipeline.py)) and served via the FastAPI application ([src/api/api.py](https://github.com/BUZEL-112/ReviewSentinel/blob/main/src/api/api.py)).
 
 ---
 
@@ -88,7 +88,7 @@ The model is not strongly committed to its prediction. Consider this a prompt to
 ### `possible_sarcasm`
 A regex heuristic fires on patterns like `"just wonderful"`, `"oh great"`, `"thanks a lot"`. The pattern set is intentionally conservative. **It is not a reliable sarcasm detector** — it is a flag that a human reviewer may want to double-check.
 
-Pattern source: [`src/api/api.py`](../../src/api/api.py) — `_SARCASM_PATTERNS`.
+Pattern source: [`src/api/api.py`](https://github.com/BUZEL-112/ReviewSentinel/blob/main/src/api/api.py) — `_SARCASM_PATTERNS`.
 
 ---
 
@@ -114,7 +114,7 @@ When `include_similar_reviews: true` is passed to the `/predict` endpoint, the A
 | `MIXED` | 40–80% match | Ambiguous — the similar reviews are split |
 | `CONTRADICTS` | < 40% match | Historical evidence suggests the prediction may be wrong |
 
-Source: [`src/search/searcher.py`](../../src/search/searcher.py) lines 108–113.
+Source: [`src/search/searcher.py`](https://github.com/BUZEL-112/ReviewSentinel/blob/main/src/search/searcher.py) lines 108–113.
 
 ---
 
@@ -124,7 +124,7 @@ When a prediction falls in the uncertainty window (0.40–0.60), the review is w
 
 If the LLM Judge disagrees with the primary classifier, the disagreement is logged as a **conflict** in `artifacts/llm_judge/conflicts.db`. These conflicts are automatically ingested into the next training run, providing a continuous active-learning signal.
 
-See [Training Guide](training-guide.md) for how conflicts enter the training set.
+See [Training Guide](../02-guides/training-pipeline.md) for how conflicts enter the training set.
 
 ---
 

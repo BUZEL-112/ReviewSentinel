@@ -2,7 +2,7 @@
 
 This guide covers getting ReviewSentinel running on your local machine using Docker Compose. It is intended for developers who need to run the API, trigger training flows, or explore the dashboards locally.
 
-If you are looking to deploy to a Kubernetes cluster, see [Deploying to Kind](../operations/deploying-to-kind.md).
+If you are looking to deploy to a Kubernetes cluster, see [Deploying to Kind](../02-guides/kubernetes-deployment.md).
 
 ---
 
@@ -60,7 +60,7 @@ You can view the startup logs to monitor progress:
 docker-compose -f docker/docker-compose.yaml logs -f
 ```
 
-Wait until you see messages indicating that `api`, `mlflow`, and `prefect-server` are running. Note that MinIO may restart once or twice as its initialization job runs (this is normal; see [Troubleshooting](../operations/troubleshooting.md)).
+Wait until you see messages indicating that `api`, `mlflow`, and `prefect-server` are running. Note that MinIO may restart once or twice as its initialization job runs (this is normal; see [Troubleshooting](../05-operations/troubleshooting.md)).
 
 ---
 
@@ -103,6 +103,6 @@ curl -X POST http://localhost:8000/predict \
 
 ## Next Steps
 
-- **Want to train a model?** Read the [Local Docker Guide](local-docker.md) to learn how to trigger the Prefect training flow.
-- **Integrating the API?** Read the full [API Reference](../api/reference.md).
-- **Want to contribute?** Read the [Contributing Guide](contributing.md).
+- **Want to train a model?** Read the [Local Docker Guide](../02-guides/local-development.md#local-docker-guide) to learn how to trigger the Prefect training flow.
+- **Integrating the API?** Read the full [API Reference](../04-api-reference/endpoints.md).
+- **Want to contribute?** Read the [Contributing Guide](../08-contributing/README.md).

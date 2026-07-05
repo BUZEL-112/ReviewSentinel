@@ -123,11 +123,11 @@ ReviewSentinel supports two deployment modes. See [Component Diagram](component-
 
 | File | Purpose |
 |------|---------|
-| [`src/api/api.py`](../../src/api/api.py) | FastAPI application, all endpoints |
-| [`src/pipeline/inference_pipeline.py`](../../src/pipeline/inference_pipeline.py) | Model loading + inference logic |
-| [`src/orchestration/flows.py`](../../src/orchestration/flows.py) | All Prefect flows and tasks |
-| [`src/monitoring/drift_monitor.py`](../../src/monitoring/drift_monitor.py) | Evidently drift report generation |
-| [`src/llm_judge/judge.py`](../../src/llm_judge/judge.py) | Ollama LLM inference for second opinions |
-| [`src/search/searcher.py`](../../src/search/searcher.py) | FAISS search + alignment signal |
-| [`configs/pipeline_params.yaml`](../../configs/pipeline_params.yaml) | Master config for all flows and subsystems |
-| [`configs/config.yaml`](../../configs/config.yaml) | Data, model, and training hyperparameters |
+| [`src/api/api.py`](https://github.com/BUZEL-112/ReviewSentinel/blob/main/src/api/api.py) | FastAPI application, all endpoints |
+| [`src/pipeline/inference_pipeline.py`](https://github.com/BUZEL-112/ReviewSentinel/blob/main/src/pipeline/inference_pipeline.py) | Model loading + inference logic |
+| [`src/orchestration/flows.py`](https://github.com/BUZEL-112/ReviewSentinel/blob/main/src/orchestration/flows.py) | All Prefect flows and tasks |
+| [`src/monitoring/drift_monitor.py`](https://github.com/BUZEL-112/ReviewSentinel/blob/main/src/monitoring/drift_monitor.py) | Evidently drift report generation |
+| [`src/llm_judge/judge.py`](https://github.com/BUZEL-112/ReviewSentinel/blob/main/src/llm_judge/judge.py) | Ollama LLM inference for second opinions |
+| [`src/search/searcher.py`](https://github.com/BUZEL-112/ReviewSentinel/blob/main/src/search/searcher.py) | FAISS search + alignment signal |
+| [`configs/pipeline_params.yaml`](https://github.com/BUZEL-112/ReviewSentinel/blob/main/configs/pipeline_params.yaml) | Master config for all flows and subsystems |
+| [`configs/config.yaml`](https://github.com/BUZEL-112/ReviewSentinel/blob/main/configs/config.yaml) | Data, model, and training hyperparameters |

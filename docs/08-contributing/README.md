@@ -9,7 +9,7 @@ Thank you for your interest in contributing to ReviewSentinel! This document out
 Before writing code, ensure you have a working local environment.
 
 1. Fork the repository and clone your fork.
-2. Follow the [Getting Started](getting-started.md) guide to install prerequisites (Docker, Git).
+2. Follow the [Getting Started](../02-guides/local-development.md#getting-started) guide to install prerequisites (Docker, Git).
 3. Set up a Python virtual environment (recommended: Python 3.10+):
    ```bash
    python -m venv venv

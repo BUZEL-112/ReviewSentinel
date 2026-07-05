@@ -210,7 +210,7 @@ Single-review sentiment prediction. The model forward pass runs in a thread pool
 - `200 OK` — prediction succeeded
 - `422 Unprocessable Entity` — request body validation failed (missing `title`, wrong type)
 - `500 Internal Server Error` — model forward pass failed
-- `503 Service Unavailable` — model not loaded (see [Error Codes](error-codes.md))
+- `503 Service Unavailable` — model not loaded (see [Error Codes](error-handling.md))
 
 ---
 

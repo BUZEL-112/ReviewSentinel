@@ -117,11 +117,11 @@ Service-to-service communication uses Docker's internal network DNS. For example
 
 | File | Contents |
 |------|---------|
-| [`k8s/01-base.yaml`](../../k8s/01-base.yaml) | Namespace, ConfigMap, Secrets, PVCs |
-| [`k8s/02-minio.yaml`](../../k8s/02-minio.yaml) | MinIO Deployment + Service + init Job |
-| [`k8s/03-core.yaml`](../../k8s/03-core.yaml) | MLflow, Prefect Server, Prefect Worker, prefect-init Job |
-| [`k8s/04-app.yaml`](../../k8s/04-app.yaml) | FastAPI Deployment + Service + Nginx Deployment + NodePort Service |
-| [`k8s/05-ollama.yaml`](../../k8s/05-ollama.yaml) | Ollama Deployment + Service |
+| [`k8s/01-base.yaml`](https://github.com/BUZEL-112/ReviewSentinel/blob/main/k8s/01-base.yaml) | Namespace, ConfigMap, Secrets, PVCs |
+| [`k8s/02-minio.yaml`](https://github.com/BUZEL-112/ReviewSentinel/blob/main/k8s/02-minio.yaml) | MinIO Deployment + Service + init Job |
+| [`k8s/03-core.yaml`](https://github.com/BUZEL-112/ReviewSentinel/blob/main/k8s/03-core.yaml) | MLflow, Prefect Server, Prefect Worker, prefect-init Job |
+| [`k8s/04-app.yaml`](https://github.com/BUZEL-112/ReviewSentinel/blob/main/k8s/04-app.yaml) | FastAPI Deployment + Service + Nginx Deployment + NodePort Service |
+| [`k8s/05-ollama.yaml`](https://github.com/BUZEL-112/ReviewSentinel/blob/main/k8s/05-ollama.yaml) | Ollama Deployment + Service |
 
 ### Key Differences: Docker Compose vs. Kubernetes
 

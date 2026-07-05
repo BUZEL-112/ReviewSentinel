@@ -2,7 +2,7 @@
 
 **Last Updated:** June 2026  
 **Dataset Version:** Amazon Review 2023 — `All_Beauty`  
-**Managed by:** [`src/data/load_data.py`](../../src/data/load_data.py), [`src/data/clean_data.py`](../../src/data/clean_data.py)
+**Managed by:** [`src/data/load_data.py`](https://github.com/BUZEL-112/ReviewSentinel/blob/main/src/data/load_data.py), [`src/data/clean_data.py`](https://github.com/BUZEL-112/ReviewSentinel/blob/main/src/data/clean_data.py)
 
 ---
 
@@ -17,7 +17,7 @@
 | **Reference** | Hou et al., "Bridging Language and Items for Retrieval and Recommendation", 2024 |
 | **License** | Non-commercial research use (per UCSD dataset terms) |
 
-The URL is configured in [`configs/config.yaml`](../../configs/config.yaml) under `data_ingestion.source_url`. `LoadData` streams and saves the raw file to `data/raw/dataset.csv`.
+The URL is configured in [`configs/config.yaml`](https://github.com/BUZEL-112/ReviewSentinel/blob/main/configs/config.yaml) under `data_ingestion.source_url`. `LoadData` streams and saves the raw file to `data/raw/dataset.csv`.
 
 ---
 
@@ -31,7 +31,7 @@ Raw Amazon reviews carry a `rating` field (integer 1–5). ReviewSentinel maps t
 | 3 | `neutral` | 1 |
 | 4, 5 | `positive` | 2 |
 
-This mapping is applied in [`src/data/clean_data.py`](../../src/data/clean_data.py) during the `CleanDataBERT` preprocessing step.
+This mapping is applied in [`src/data/clean_data.py`](https://github.com/BUZEL-112/ReviewSentinel/blob/main/src/data/clean_data.py) during the `CleanDataBERT` preprocessing step.
 
 > [!NOTE]
 > Rating 3 ("neutral") is the smallest class in this dataset. The model's performance on neutral reviews is likely lower than on positive or negative reviews. Check per-class metrics in MLflow before drawing conclusions from the weighted F1 score alone.
@@ -50,7 +50,7 @@ This mapping is applied in [`src/data/clean_data.py`](../../src/data/clean_data.
 - `shuffle = true` before splitting
 - Splits are stratified by label to maintain class proportions
 
-Configuration: [`configs/config.yaml`](../../configs/config.yaml) under `clean_data_bert`.
+Configuration: [`configs/config.yaml`](https://github.com/BUZEL-112/ReviewSentinel/blob/main/configs/config.yaml) under `clean_data_bert`.
 
 ---
 
@@ -63,7 +63,7 @@ The model is trained on the **concatenation of two Amazon fields**:
 | `title` | Review headline | Short; strong sentiment signal |
 | `text` | Review body | Long-form; provides context |
 
-Concatenation format: `"{title} {body}"` — implemented in [`_build_texts()`](../../src/pipeline/inference_pipeline.py) and applied consistently in both training and inference.
+Concatenation format: `"{title} {body}"` — implemented in [`_build_texts()`](https://github.com/BUZEL-112/ReviewSentinel/blob/main/src/pipeline/inference_pipeline.py) and applied consistently in both training and inference.
 
 ---
 
@@ -85,7 +85,7 @@ ReviewSentinel uses **minimal cleaning** rather than aggressive NLP preprocessin
 | Stemming / lemmatisation | Destroys morphological information the tokenizer uses |
 | Punctuation removal | `!`, `?`, `...` carry affective signal |
 
-Implementation: [`_minimal_clean()`](../../src/pipeline/inference_pipeline.py#L135) and [`CleanDataBERT`](../../src/data/clean_data.py).
+Implementation: [`_minimal_clean()`](https://github.com/BUZEL-112/ReviewSentinel/blob/main/src/pipeline/inference_pipeline.py#L135) and [`CleanDataBERT`](https://github.com/BUZEL-112/ReviewSentinel/blob/main/src/data/clean_data.py).
 
 ---
 
@@ -106,7 +106,7 @@ Implementation: [`_minimal_clean()`](../../src/pipeline/inference_pipeline.py#L1
 
 Amazon review datasets are typically skewed toward positive ratings (products with very few reviews are less likely to be reviewed at all; satisfied customers are slightly more likely to leave reviews). The `All_Beauty` category follows this pattern.
 
-The Great Expectations data validation in [`src/orchestration/validation.py`](../../src/orchestration/validation.py) enforces a `max_class_imbalance` threshold (default: 80%) to prevent severe skew from reaching the trainer. If any class exceeds 80% of total samples, the pipeline aborts.
+The Great Expectations data validation in [`src/orchestration/validation.py`](https://github.com/BUZEL-112/ReviewSentinel/blob/main/src/orchestration/validation.py) enforces a `max_class_imbalance` threshold (default: 80%) to prevent severe skew from reaching the trainer. If any class exceeds 80% of total samples, the pipeline aborts.
 
 ---
 
@@ -120,7 +120,7 @@ Before automated retraining triggered by drift monitoring, the pipeline exports 
 2. **Conflict records are human-validated** only indirectly (via the LLM Judge, which itself has error rates)
 3. **The proportion of conflict records in the training set grows over time** — this is intentional active learning but should be monitored to ensure the conflict data quality is acceptable
 
-See [`judge_tasks.py`](../../src/orchestration/judge_tasks.py) for the export logic.
+See [`judge_tasks.py`](https://github.com/BUZEL-112/ReviewSentinel/blob/main/src/orchestration/judge_tasks.py) for the export logic.
 
 ---
 
